@@ -22,15 +22,33 @@ All of the following are **strings**:
 | `EdgeId` | Key for an edge in `Graph.edges` |
 | `NodeTypeId` | Discriminator / type name for a node (function definition id); identity of a catalog `NodeType` — see [node-libraries.md](./node-libraries.md) |
 | `PortId` | Key for an input or output port on a node |
-| `SignalTypeId` | Identity of an Imp signal type |
+| `SignalTypeId` | Identity of an Imp concrete signal type |
+| `TypeParamId` | Identity of a type parameter declared on a `NodeType` or `GraphType` |
 
-### SignalType
+### TypeParam
 
 | Field | Type | Required |
 | --- | --- | --- |
-| `id` | `SignalTypeId` | must |
+| `id` | `TypeParamId` | must |
 
-Minimal signal-type identity for this revision. Ports are typed slots (parameters / returns); the full Imp type system (aliases, constraints, etc.) may extend `SignalType` in later revisions.
+Declares an **opaque** type parameter (e.g. `T`) on a polymorphic catalog entry. Params are scoped to the declaring `NodeType` or `GraphType`.
+
+### SignalType
+
+`SignalType` is a **tagged union** of two variants, JSON-discriminated by field presence:
+
+| Variant | Fields | Example |
+| --- | --- | --- |
+| **Concrete** | `id` (`SignalTypeId`), optional `args` (`SignalType[]`) | `{ "id": "collection", "args": [{ "param": "T" }] }` |
+| **Variable** | `param` (`TypeParamId`) | `{ "param": "T" }` |
+
+Rules:
+
+- **`args`** is only valid on the concrete variant (e.g. `collection<T>`).
+- A concrete type with **no** `args` is a nullary signal type (e.g. `{ "id": "boolean" }`).
+- Bare `{ "id": "collection" }` without `args` is **not** a well-formed `collection` type after library migration — use `collection<any>` or a type parameter.
+- **`any`** is a concrete top type; static checking treats it as compatible with any other signal type.
+- Structural/record types, bounds, and aliases are out of scope for this revision — see [type-system.md](../imp-typecheck/type-system.md).
 
 ### PrimitiveValue
 
@@ -87,9 +105,12 @@ Only keys that are valid input ports on the node's `NodeType` should appear. Key
 | --- | --- | --- |
 | `id` | `NodeId` | must |
 | `type` | `NodeTypeId` | must |
+| `typeArgs` | `SignalType[]` | may |
 | `inputs` | `InputValues` | must (may be empty) |
 
 A **node instance**: identity, type reference, and local literal input values. Port templates (signal types, defaults, output ports) live on the catalog `NodeType` — see [node-libraries.md](./node-libraries.md).
+
+When the catalog `NodeType` declares `typeParams`, `typeArgs` supplies **concrete** `SignalType` values for those parameters in declaration order. Omit `typeArgs` when edge wiring provides enough constraints for the checker to infer them; required when a polymorphic node has no inferrable inputs (e.g. a standalone boundary `input` node).
 
 A node's `id` must equal its key in `Graph.nodes` when the graph is well-formed.
 
@@ -132,11 +153,11 @@ Graphs act as **subgraphs** with an external interface. Core Imp ships boundary 
 | --- | --- | --- |
 | `input` | outputs: single `value` port | Brings a value **into** the graph from outside |
 | `output` | inputs: single `value` port | Sends a value **out** of the graph to the host |
-| `parameter` | inputs: optional `label` (`string`, default `""`), `value` (`any`, default `null`); outputs: `value` | Declares a host-configurable graph parameter. The instance `value` is the default; hosts may override it at execute time. `label` is UI metadata (not used in SQL). Lowers like `literal` (bound parameter / literal from `value`). |
+| `parameter` | inputs: optional `label` (`string`, default `""`), `value` (`any`, default `null`); outputs: `value` (`T`) | Declares a host-configurable graph parameter. The instance `value` is the default; hosts may override it at execute time. `label` is UI metadata (not used in SQL). Lowers like `literal` (bound parameter / literal from `value`). Boundary nodes are polymorphic over `T` on `value` ports — see [node-libraries.md](./node-libraries.md). |
 
 **One node instance per boundary port** (not a multi-port patch board). A subgraph with three inputs and one output is three `input` nodes + one `output` node. Editors may group boundary nodes visually without changing the transmission model.
 
-A host wires external values into `input` nodes and reads results from `output` nodes. Hosts that expose settings UI discover `parameter` nodes, present `label` + current `value`, and bind overrides into each parameter node's `inputs.value` before lowering. Future work may add a composite `GraphType` catalog that declares a subgraph's full interface as a reusable `NodeType`; that is out of scope for this revision.
+A host wires external values into `input` nodes and reads results from `output` nodes. Hosts that expose settings UI discover `parameter` nodes, present `label` + current `value`, and bind overrides into each parameter node's `inputs.value` before lowering. Reusable subgraph interfaces are declared via **`GraphType`** catalogs — see [graph-types.md](./graph-types.md). Embedding a subgraph body as a composite `NodeType` is future work.
 
 ### Invariants (well-formed graphs)
 
@@ -157,7 +178,7 @@ These are design requirements for validators and converters:
 - **Nodes as functions** — catalog `NodeType` ports are parameter and return slots; instance `Node.inputs` hold local literal values for parameters.
 - **Instance literals on the node** — initial values must live somewhere; storing them on the instance (not a side map) matches common dataflow tooling and lets an edge override without discarding the local fallback.
 - **`defaultValue` on port templates** — required vs optional is expressed by omitting or setting a default on the catalog `Port`, not a separate flags field.
-- **`SignalType`** names the Imp type of a signal on a port; starting with `id` only leaves room for aliases and constraints later without renaming the port maps.
+- **`SignalType`** names the Imp type of a signal on a port; the concrete / variable union supports opaque generics (`collection<T>`) without a separate type-expression AST.
 - **Record/map keyed by id** makes merge, lookup, and partial update straightforward for transmission and UI state.
 - **Separate `EdgeId`** allows multiple edges and stable identity without encoding topology into the id.
 - **Boundary `input` / `output` / `parameter` nodes** — `input`/`output` are one instance per host port; `parameter` declares host-configurable defaults that editors can expose as settings.
@@ -174,6 +195,8 @@ None.
 ## See also
 
 - [node-libraries.md](./node-libraries.md) — `NodeType` / `NodeLibrary` catalogs
+- [graph-types.md](./graph-types.md) — `GraphType` / `GraphTypeLibrary` catalogs
+- [type-system.md](../imp-typecheck/type-system.md) — static type checking
 - [registry.md](../imp-registry/registry.md) — loading libraries and looking up types
 - [react-flow.md](../imp-react-flow/react-flow.md)
 - Root [AGENTS.md](../../../AGENTS.md)

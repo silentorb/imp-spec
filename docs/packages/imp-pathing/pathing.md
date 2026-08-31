@@ -30,7 +30,7 @@ Use **full words** for `NodeTypeId`s unless the abbreviation is a widely underst
 | `string` | Association ids and other string literals |
 | `number` | Direction and other numeric literals |
 
-Reuse the same signal ids as [collection-transforms.md](../imp-collection-transforms/collection-transforms.md) so path results compose with `filter` / `sort` / `project`.
+Reuse the same signal ids as [collection-transforms.md](../imp-collection-transforms/collection-transforms.md) so path results compose with `filter` / `sort` / `project`. `traverse` declares `typeParams: [{ id: "T" }]` and uses `collection<T>` on collection input and output ports.
 
 ### No table source node
 
@@ -40,7 +40,7 @@ There is **no** `from` / table-source node. The incoming node collection arrives
 
 | NodeType | Inputs | Outputs | Notes |
 | --- | --- | --- | --- |
-| `traverse` | `collection` (`collection`), `association` (`string`), `direction` (`number`, default `0`), `edge_property` (`string`, default `null`), `edge_equals` (`any`, default `null`) | `collection` | One hop: for each source row identity (`id`), follow host edges where `source = id` and `type = hostEdgeType(association, direction)`, emit distinct target nodes as the new collection. When the host edges relation has a JSON `propertiesColumn`, overlay hop-edge properties onto each target's `properties` so downstream `project` / `group` can read them. When both `edge_property` and `edge_equals` are non-null, also require the hop edge's JSON property named by `edge_property` to equal `edge_equals`. Hosts may map `edge_equals` through `RelationalSchema.encodePropertyLiteral` at SQL compile time. |
+| `traverse` | `collection` (`collection<T>`), `association` (`string`), `direction` (`number`, default `0`), `edge_property` (`string`, default `null`), `edge_equals` (`any`, default `null`) | `collection` (`collection<T>`) | One hop: for each source row identity (`id`), follow host edges where `source = id` and `type = hostEdgeType(association, direction)`, emit distinct target nodes as the new collection. When the host edges relation has a JSON `propertiesColumn`, overlay hop-edge properties onto each target's `properties` so downstream `project` / `group` can read them. When both `edge_property` and `edge_equals` are non-null, also require the hop edge's JSON property named by `edge_property` to equal `edge_equals`. Hosts may map `edge_equals` through `RelationalSchema.encodePropertyLiteral` at SQL compile time. |
 
 - Chained hops = multiple `traverse` nodes in the Imp DAG (not recursive / variable-length paths in v1).
 - `association` and `direction` are **separate** Imp values. Graphs must not pack them into one delimited string.

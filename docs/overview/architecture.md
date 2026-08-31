@@ -64,6 +64,22 @@ Hosts choose compile (relational backends) or execute (flatfile, custom stores).
 | `search` host-delegated | [collection-transforms](../packages/imp-collection-transforms/collection-transforms.md) | sql (not lowered), execution (`textSearch`) |
 | Read-only default / sandboxing | [execution](../packages/imp-execution/execution.md) | parity with sql SELECT-shaped profile |
 
+## Language bindings
+
+Specs are language-neutral. Bindings implement equivalent packages from the same spec docs:
+
+| Spec package | TypeScript (`imp-ts`) | Rust (`imp-rust`) |
+| --- | --- | --- |
+| `imp-core-types` | `packages/imp-core-types` | `crates/imp_core_types` |
+| `imp-registry` | `packages/imp-registry` | `crates/imp_registry` |
+| `imp-collection-transforms` | `packages/imp-collection-transforms` | `crates/imp_collection_transforms` |
+| `imp-pathing` | `packages/imp-pathing` | `crates/imp_pathing` |
+| `imp-execution` | `packages/imp-execution` | `crates/imp_execution` (deferred) |
+| `imp-sql` | `packages/imp-sql` | — (JS/Kysely only) |
+| `imp-react-flow` | `packages/imp-react-flow` | — (React only) |
+
+Rust crate names use **snake_case**; npm package names use hyphenated `imp-*`. When docs and a binding disagree, update the spec or the binding explicitly.
+
 ## See also
 
 - [authoring.md](./authoring.md)
