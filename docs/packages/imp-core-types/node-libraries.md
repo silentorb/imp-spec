@@ -17,8 +17,9 @@ Declarative **catalogs of node types** that library packages can ship without de
 | Field | Type | Required |
 | --- | --- | --- |
 | `id` | `TypeParamId` | must |
+| `bounds` | `TypeConstraintId[]` | may |
 
-Opaque type parameter declared on a polymorphic catalog entry. See [graph-model.md](./graph-model.md) for `SignalType` variable references.
+Opaque type parameter declared on a polymorphic catalog entry. See [graph-model.md](./graph-model.md) for `SignalType` variable references and [type-constraints.md](./type-constraints.md) for `bounds`.
 
 ### NodeType
 
@@ -111,5 +112,6 @@ None.
 
 - [graph-model.md](./graph-model.md)
 - [graph-types.md](./graph-types.md)
+- [type-constraints.md](./type-constraints.md)
 - [registry.md](../imp-registry/registry.md)
 - Root [AGENTS.md](../../../AGENTS.md)

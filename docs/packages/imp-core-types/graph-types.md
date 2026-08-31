@@ -66,6 +66,7 @@ None.
 
 - [graph-model.md](./graph-model.md)
 - [node-libraries.md](./node-libraries.md)
+- [type-constraints.md](./type-constraints.md)
 - [type-system.md](../imp-typecheck/type-system.md)
 - [registry.md](../imp-registry/registry.md)
 - Root [AGENTS.md](../../../AGENTS.md)

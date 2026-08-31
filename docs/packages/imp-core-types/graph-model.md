@@ -24,14 +24,18 @@ All of the following are **strings**:
 | `PortId` | Key for an input or output port on a node |
 | `SignalTypeId` | Identity of an Imp concrete signal type |
 | `TypeParamId` | Identity of a type parameter declared on a `NodeType` or `GraphType` |
+| `TypeConstraintId` | Identity of a named nominal type constraint in a `TypeConstraintLibrary` |
 
 ### TypeParam
 
 | Field | Type | Required |
 | --- | --- | --- |
 | `id` | `TypeParamId` | must |
+| `bounds` | `TypeConstraintId[]` | may |
 
 Declares an **opaque** type parameter (e.g. `T`) on a polymorphic catalog entry. Params are scoped to the declaring `NodeType` or `GraphType`.
+
+Optional `bounds` reference named constraints from a `TypeConstraintLibrary` — see [type-constraints.md](./type-constraints.md). Omitted = unconstrained.
 
 ### SignalType
 
@@ -48,7 +52,7 @@ Rules:
 - A concrete type with **no** `args` is a nullary signal type (e.g. `{ "id": "boolean" }`).
 - Bare `{ "id": "collection" }` without `args` is **not** a well-formed `collection` type after library migration — use `collection<any>` or a type parameter.
 - **`any`** is a concrete top type; static checking treats it as compatible with any other signal type.
-- Structural/record types, bounds, and aliases are out of scope for this revision — see [type-system.md](../imp-typecheck/type-system.md).
+- Structural/record types and type aliases are out of scope for this revision — see [type-system.md](../imp-typecheck/type-system.md). Nominal type constraints on `TypeParam.bounds` are specified in [type-constraints.md](./type-constraints.md).
 
 ### PrimitiveValue
 
@@ -196,6 +200,7 @@ None.
 
 - [node-libraries.md](./node-libraries.md) — `NodeType` / `NodeLibrary` catalogs
 - [graph-types.md](./graph-types.md) — `GraphType` / `GraphTypeLibrary` catalogs
+- [type-constraints.md](./type-constraints.md) — `TypeConstraint` / `TypeConstraintLibrary` catalogs
 - [type-system.md](../imp-typecheck/type-system.md) — static type checking
 - [registry.md](../imp-registry/registry.md) — loading libraries and looking up types
 - [react-flow.md](../imp-react-flow/react-flow.md)

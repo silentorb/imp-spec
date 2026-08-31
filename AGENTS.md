@@ -8,8 +8,8 @@ Imp succeeds [imp-kotlin](https://github.com/silentorb/imp-kotlin) but keeps onl
 
 | Package | Role | Spec |
 | --- | --- | --- |
-| `imp-core-types` | Core graph + library interfaces; core boundary `NodeLibrary` | [graph-model](./docs/packages/imp-core-types/graph-model.md), [node-libraries](./docs/packages/imp-core-types/node-libraries.md), [graph-types](./docs/packages/imp-core-types/graph-types.md) |
-| `imp-registry` | Load `NodeLibrary` / `GraphTypeLibrary` values and look up types | [registry](./docs/packages/imp-registry/registry.md) |
+| `imp-core-types` | Core graph + library interfaces; core boundary `NodeLibrary` | [graph-model](./docs/packages/imp-core-types/graph-model.md), [node-libraries](./docs/packages/imp-core-types/node-libraries.md), [graph-types](./docs/packages/imp-core-types/graph-types.md), [type-constraints](./docs/packages/imp-core-types/type-constraints.md) |
+| `imp-registry` | Load `NodeLibrary` / `GraphTypeLibrary` / `TypeConstraintLibrary` values and look up types | [registry](./docs/packages/imp-registry/registry.md) |
 | `imp-typecheck` | Static signal-type checking for graphs | [type-system](./docs/packages/imp-typecheck/type-system.md) |
 | `imp-react-flow` | Imp ↔ React Flow converters | [react-flow](./docs/packages/imp-react-flow/react-flow.md) |
 | `imp-collection-transforms` | Collection combinator `NodeLibrary` | [collection-transforms](./docs/packages/imp-collection-transforms/collection-transforms.md) |
@@ -39,6 +39,7 @@ When docs and code disagree, update the doc or the code explicitly — do not le
 | Core graph model (`Graph`, `Node`, `Edge`, ports, `InputValues`) | [graph-model.md](./docs/packages/imp-core-types/graph-model.md) |
 | Node type libraries (`NodeType`, `NodeLibrary`) | [node-libraries.md](./docs/packages/imp-core-types/node-libraries.md) |
 | Graph type libraries (`GraphType`, `GraphTypeLibrary`) | [graph-types.md](./docs/packages/imp-core-types/graph-types.md) |
+| Type constraint libraries (`TypeConstraint`, `TypeConstraintLibrary`) | [type-constraints.md](./docs/packages/imp-core-types/type-constraints.md) |
 | Static type checking | [type-system.md](./docs/packages/imp-typecheck/type-system.md) |
 | Registry load / lookup | [registry.md](./docs/packages/imp-registry/registry.md) |
 | React Flow integration / converters | [react-flow.md](./docs/packages/imp-react-flow/react-flow.md) |

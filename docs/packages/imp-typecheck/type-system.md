@@ -55,8 +55,23 @@ Validate a `Graph` against a registry (and optional graph-type libraries):
 | Required inputs | Required ports (no default, no edge, no literal) are reported as errors |
 | Type-param arity | When `Node.typeArgs` set, length must match `NodeType.typeParams` |
 | Unresolved params | After propagation, no free type variables remain on any wired port |
+| Type-param bounds | After inference, each resolved concrete type arg must satisfy every `TypeParam.bounds` entry via registered `TypeConstraint` membership — see [type-constraints.md](../imp-core-types/type-constraints.md) |
 
 Returns a list of structured errors (node id, port id, message). Empty list means success.
+
+### checkTypeParamBounds
+
+After edge unification and unresolved-variable checks inside `checkGraph`:
+
+1. For each graph node whose catalog `NodeType` declares `typeParams`, resolve concrete type args via `resolveTypeArgs`.
+2. For each `TypeParam` with `bounds`, at the matching arg index:
+   - Skip bounds check when the arg is not concrete (unresolved-param errors already reported).
+   - `{ "id": "any" }` satisfies all bounds.
+   - For each bound id, load `TypeConstraint` from registry; the arg must match at least one `members[]` pattern (`signal_type_matches`, same as dispatch case matching).
+3. Missing constraint id in registry → error on the node.
+4. No matching member → error (e.g. `type argument "boolean" does not satisfy bound "Scalar"`).
+
+`checkGraph` **must** run this pass; bindings may also expose `checkTypeParamBounds` separately for tests.
 
 ### checkGraphImplements
 
@@ -105,7 +120,7 @@ Bindings should expose a stable error record:
 
 ## Behavior / pipeline
 
-1. Build registry from `NodeLibrary` (+ optional `GraphTypeLibrary`) values.
+1. Build registry from `NodeLibrary` (+ optional `GraphTypeLibrary`, `TypeConstraintLibrary`) values.
 2. Call `checkGraph(graph, registry)` before transmission-sensitive operations.
 3. Optionally call `checkGraphImplements` when validating reusable subgraph contracts.
 
@@ -118,5 +133,6 @@ None.
 - [graph-model.md](../imp-core-types/graph-model.md)
 - [node-libraries.md](../imp-core-types/node-libraries.md)
 - [graph-types.md](../imp-core-types/graph-types.md)
+- [type-constraints.md](../imp-core-types/type-constraints.md)
 - [registry.md](../imp-registry/registry.md)
 - Root [AGENTS.md](../../../AGENTS.md)
