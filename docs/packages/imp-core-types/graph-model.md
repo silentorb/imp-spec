@@ -23,7 +23,7 @@ All of the following are **strings**:
 | `NodeTypeId` | Discriminator / type name for a node (function definition id); identity of a catalog `NodeType` — see [node-libraries.md](./node-libraries.md) |
 | `PortId` | Key for an input or output port on a node |
 | `SignalTypeId` | Identity of an Imp concrete signal type |
-| `TypeParamId` | Identity of a type parameter declared on a `NodeType` or `GraphType` |
+| `TypeParamId` | Identity of a type parameter declared on a `NodeDefinition` |
 | `TypeConstraintId` | Identity of a named nominal type constraint in a `TypeConstraintLibrary` |
 
 ### TypeParam
@@ -33,7 +33,7 @@ All of the following are **strings**:
 | `id` | `TypeParamId` | must |
 | `bounds` | `TypeConstraintId[]` | may |
 
-Declares an **opaque** type parameter (e.g. `T`) on a polymorphic catalog entry. Params are scoped to the declaring `NodeType` or `GraphType`.
+Declares an **opaque** type parameter (e.g. `T`) on a polymorphic catalog entry. Params are scoped to the declaring `NodeDefinition`.
 
 Optional `bounds` reference named constraints from a `TypeConstraintLibrary` — see [type-constraints.md](./type-constraints.md). Omitted = unconstrained.
 
@@ -75,14 +75,14 @@ Union: `string | number | boolean | null`.
 | `type` | `SignalType` | must |
 | `defaultValue` | `PrimitiveValue` | may |
 
-One port template: identity, signal type, and optional default. Used on **catalog** `NodeType.inputs` / `NodeType.outputs` — not on graph node instances.
+One port template: identity, signal type, and optional default. Used on **catalog** `NodeDefinition.inputs` / `NodeDefinition.outputs` — not on graph node instances.
 
 - **`defaultValue` unset** — input port is **required** (must resolve via an incoming edge or a local instance literal).
 - **`defaultValue` set** — input port is **optional**; falls back to that value when unwired and no local literal is present.
 
 ### Ports (container)
 
-`Ports` is a map `PortId` → `Port`. Used for both `NodeType.inputs` and `NodeType.outputs`.
+`Ports` is a map `PortId` → `Port`. Used for both `NodeDefinition.inputs` and `NodeDefinition.outputs`.
 
 A port's `id` must equal its key in the parent `Ports` map when the graph/library is well-formed.
 
@@ -101,7 +101,7 @@ Local **literal values** on a graph node instance, keyed by input `PortId`:
 
 Partial map `PortId` → `PrimitiveValue`.
 
-Only keys that are valid input ports on the node's `NodeType` should appear. Keys may be omitted when the value comes from an edge or a catalog `defaultValue`.
+Only keys that are valid input ports on the node's `NodeDefinition` should appear. Keys may be omitted when the value comes from an edge or a catalog `defaultValue`.
 
 ### Node
 
@@ -112,9 +112,11 @@ Only keys that are valid input ports on the node's `NodeType` should appear. Key
 | `typeArgs` | `SignalType[]` | may |
 | `inputs` | `InputValues` | must (may be empty) |
 
-A **node instance**: identity, type reference, and local literal input values. Port templates (signal types, defaults, output ports) live on the catalog `NodeType` — see [node-libraries.md](./node-libraries.md).
+A **node instance**: identity, type reference, and local literal input values. Port templates (signal types, defaults, output ports) live on the catalog `NodeDefinition` — see [node-libraries.md](./node-libraries.md).
 
-When the catalog `NodeType` declares `typeParams`, `typeArgs` supplies **concrete** `SignalType` values for those parameters in declaration order. Omit `typeArgs` when edge wiring provides enough constraints for the checker to infer them; required when a polymorphic node has no inferrable inputs (e.g. a standalone boundary `input` node).
+When the catalog `NodeDefinition` declares `typeParams`, `typeArgs` supplies **concrete** `SignalType` values for those parameters in declaration order. Omit `typeArgs` when edge wiring provides enough constraints for the checker to infer them; required when a polymorphic node has no inferrable inputs (e.g. a standalone boundary `input` node).
+
+Graph-backed definitions appear as ordinary node instances: `Node.type` references the definition id; the internal `body` graph is resolved late — see [resolve.md](../imp-graph-resolve/resolve.md).
 
 A node's `id` must equal its key in `Graph.nodes` when the graph is well-formed.
 
@@ -144,16 +146,16 @@ Each input port on a node instance may have a **local literal** in `Node.inputs`
 
 1. **Edge** — if an edge targets the port, use the wired value (overrides any local literal).
 2. Else **local literal** — `Node.inputs[portId]` when present.
-3. Else **`Port.defaultValue`** from the catalog `NodeType` input template.
+3. Else **`Port.defaultValue`** from the catalog `NodeDefinition` input template.
 4. Else **error** — the port is required and unsatisfied.
 
 When an edge is removed in an editor, the node reverts to its stored local literal (or catalog default) instead of going blank.
 
 ### Core boundary nodes
 
-Graphs act as **subgraphs** with an external interface. Core Imp ships boundary `NodeType`s in `coreNodeLibrary` (`id: "imp.core"`):
+Graphs act as **subgraphs** with an external interface. Core Imp ships boundary definitions in `coreNodeLibrary` (`id: "imp.core"`):
 
-| NodeType | Ports | Role |
+| Definition | Ports | Role |
 | --- | --- | --- |
 | `input` | outputs: single `value` port | Brings a value **into** the graph from outside |
 | `output` | inputs: single `value` port | Sends a value **out** of the graph to the host |
@@ -161,17 +163,17 @@ Graphs act as **subgraphs** with an external interface. Core Imp ships boundary 
 
 **One node instance per boundary port** (not a multi-port patch board). A subgraph with three inputs and one output is three `input` nodes + one `output` node. Editors may group boundary nodes visually without changing the transmission model.
 
-A host wires external values into `input` nodes and reads results from `output` nodes. Hosts that expose settings UI discover `parameter` nodes, present `label` + current `value`, and bind overrides into each parameter node's `inputs.value` before lowering. Reusable subgraph interfaces are declared via **`GraphType`** catalogs — see [graph-types.md](./graph-types.md). Embedding a subgraph body as a composite `NodeType` is future work.
+A host wires external values into `input` nodes and reads results from `output` nodes. Hosts that expose settings UI discover `parameter` nodes, present `label` + current `value`, and bind overrides into each parameter node's `inputs.value` before lowering. Reusable subgraphs are **`NodeDefinition` entries with `body` + `bindings`** — see [node-libraries.md](./node-libraries.md) and [graph-libraries.md](./graph-libraries.md). Parent graphs reference them by `Node.type`; resolution is late — see [resolve.md](../imp-graph-resolve/resolve.md).
 
 ### Invariants (well-formed graphs)
 
 These are design requirements for validators and converters:
 
 1. Every `Node.id` must equal its key in `Graph.nodes`.
-2. Every `Port.id` must equal its key in the parent `Ports` map on a `NodeType`.
+2. Every `Port.id` must equal its key in the parent `Ports` map on a `NodeDefinition`.
 3. For every edge, `from.node` and `to.node` must exist in `Graph.nodes`.
-4. For every edge, `from.port` must exist in that node's `NodeType.outputs`, and `to.port` must exist in that node's `NodeType.inputs` (when types are known via a registry).
-5. `Node.inputs` keys must be valid input `PortId`s for the node's `NodeType` (when type is known).
+4. For every edge, `from.port` must exist in that node's `NodeDefinition.outputs`, and `to.port` must exist in that node's `NodeDefinition.inputs` (when types are known via a registry).
+5. `Node.inputs` keys must be valid input `PortId`s for the node's `NodeDefinition` (when type is known).
 6. Required input ports (no `defaultValue`, no incoming edge, no local literal) are ill-formed when validated.
 7. An input port **may** have both an edge and a local literal; the edge wins at resolution.
 8. The graph is intended to be a **DAG** (no directed cycles) for Imp transmission use cases; cycle detection is a future validation concern.
@@ -179,14 +181,14 @@ These are design requirements for validators and converters:
 ## Design rationale
 
 - **Port-level edges** keep connectivity precise when a node has many inputs/outputs, and align with handle-based UI graphs (see [react-flow.md](../imp-react-flow/react-flow.md)).
-- **Nodes as functions** — catalog `NodeType` ports are parameter and return slots; instance `Node.inputs` hold local literal values for parameters.
+- **Nodes as functions** — catalog `NodeDefinition` ports are parameter and return slots; instance `Node.inputs` hold local literal values for parameters.
 - **Instance literals on the node** — initial values must live somewhere; storing them on the instance (not a side map) matches common dataflow tooling and lets an edge override without discarding the local fallback.
 - **`defaultValue` on port templates** — required vs optional is expressed by omitting or setting a default on the catalog `Port`, not a separate flags field.
 - **`SignalType`** names the Imp type of a signal on a port; the concrete / variable union supports opaque generics (`collection<T>`) without a separate type-expression AST.
 - **Record/map keyed by id** makes merge, lookup, and partial update straightforward for transmission and UI state.
 - **Separate `EdgeId`** allows multiple edges and stable identity without encoding topology into the id.
 - **Boundary `input` / `output` / `parameter` nodes** — `input`/`output` are one instance per host port; `parameter` declares host-configurable defaults that editors can expose as settings.
-- **Catalog vs instance** — `NodeType` holds port templates; `Node` holds identity, type id, and local input values (`Node.type` ↔ `NodeType.id`). See [node-libraries.md](./node-libraries.md).
+- **Catalog vs instance** — `NodeDefinition` holds port templates (and optional `body`); `Node` holds identity, type id, and local input values (`Node.type` ↔ `NodeDefinition.id`). See [node-libraries.md](./node-libraries.md).
 
 ## Behavior / pipeline
 
@@ -198,8 +200,9 @@ None.
 
 ## See also
 
-- [node-libraries.md](./node-libraries.md) — `NodeType` / `NodeLibrary` catalogs
-- [graph-types.md](./graph-types.md) — `GraphType` / `GraphTypeLibrary` catalogs
+- [node-libraries.md](./node-libraries.md) — `NodeDefinition` / `NodeLibrary` catalogs
+- [graph-libraries.md](./graph-libraries.md) — JSON graph library format
+- [resolve.md](../imp-graph-resolve/resolve.md) — late nested graph resolution
 - [type-constraints.md](./type-constraints.md) — `TypeConstraint` / `TypeConstraintLibrary` catalogs
 - [type-system.md](../imp-typecheck/type-system.md) — static type checking
 - [registry.md](../imp-registry/registry.md) — loading libraries and looking up types

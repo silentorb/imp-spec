@@ -76,11 +76,12 @@ Use **execute** / **execution**, not **interpret** — active DAG evaluation, no
 
 ## Behavior / pipeline
 
-1. Host builds `Registry` (core + collection.transforms + pathing).
-2. Caller invokes `executeGraph(graph, { registry, host, capabilities })`.
-3. Runtime resolves inputs (same order as imp-sql: edge → local literal → catalog default).
-4. Dispatches node types; `traverse` calls `host.traverse`.
-5. Returns `{ columns: string[]; rows: Record<string, unknown>[] }`.
+1. Host builds `Registry` (core + collection.transforms + pathing + graph libraries).
+2. **`buildExecutionProgram(graph, registry)`** — shared subgraph table (see [resolve.md](../imp-graph-resolve/resolve.md)).
+3. Caller invokes `executeGraph(program, { registry, host, capabilities })`.
+4. Runtime resolves inputs (same order as imp-sql: edge → local literal → catalog default).
+5. Dispatches node types; graph-backed nodes enter shared subgraphs; `traverse` calls `host.traverse`.
+6. Returns `{ columns: string[]; rows: Record<string, unknown>[] }`.
 
 ## Configuration
 
@@ -88,6 +89,7 @@ None.
 
 ## See also
 
+- [resolve.md](../imp-graph-resolve/resolve.md) — execution program with shared subgraphs
 - [sql.md](../imp-sql/sql.md) — compile-time lowering
 - [collection-transforms.md](../imp-collection-transforms/collection-transforms.md)
 - [pathing.md](../imp-pathing/pathing.md)

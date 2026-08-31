@@ -115,10 +115,11 @@ Compiled SQL + bindings are consumed by the host's SQL executor. Generic `imp-sq
 
 ## Behavior / pipeline
 
-1. Load registry with core library + collection transforms (+ pathing when needed).
-2. Build an Imp graph: `input` → transforms / `traverse` → `output`.
-3. `graphToSql(graph, { registry, schema: { table: "items", edges?: … } })`.
-4. `compileSql(query)` → run against a DB.
+1. Load registry with core library + collection transforms (+ pathing when needed) + any graph libraries.
+2. Build an Imp graph: `input` → transforms / composites / `traverse` → `output`.
+3. **`flattenGraph(graph, registry)`** — expand graph-backed node references (see [resolve.md](../imp-graph-resolve/resolve.md)).
+4. `graphToSql(flatGraph, { registry, schema: { table: "items", edges?: … } })`.
+5. `compileSql(query)` → run against a DB.
 
 ## Configuration
 
@@ -126,6 +127,7 @@ None beyond `SqlCompileOptions`.
 
 ## See also
 
+- [resolve.md](../imp-graph-resolve/resolve.md) — nested graph flattening before compile
 - [collection-transforms.md](../imp-collection-transforms/collection-transforms.md)
 - [pathing.md](../imp-pathing/pathing.md)
 - [graph-model.md](../imp-core-types/graph-model.md)
