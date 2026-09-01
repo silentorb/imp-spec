@@ -6,77 +6,83 @@
 flowchart TB
   SPEC[imp-core-types]
 
-  subgraph libraries [Libraries]
+  subgraph impSpec [imp-spec layer]
     REG[imp-registry]
+    TC[imp-typecheck]
+    GR[imp-graph-resolve]
     CT[imp-collection-transforms]
     PATH[imp-pathing]
   end
 
+  subgraph impTs [imp-ts Translators and runtime]
+    RF[imp-react-flow Translator]
+    SQL[imp-sql Translator]
+    EXEC[imp-execution runtime]
+  end
+
   REG --> SPEC
+  TC --> SPEC
+  TC --> REG
+  GR --> SPEC
+  GR --> REG
+  GR --> TC
   CT --> SPEC
   PATH --> SPEC
 
-  subgraph converters [Converters and runtimes]
-    RF[imp-react-flow]
-    SQL[imp-sql]
-    EXEC[imp-execution]
-  end
-
   RF --> SPEC
+  RF --> REG
   SQL --> SPEC
   SQL --> REG
   SQL --> CT
   SQL --> PATH
+  SQL --> GR
   EXEC --> SPEC
   EXEC --> REG
   EXEC --> CT
   EXEC --> PATH
+  EXEC --> GR
 ```
 
 ## Layering rules
 
 - **Library packages** (`imp-collection-transforms`, `imp-pathing`) depend only on **`imp-core-types`**. They export declarative `NodeLibrary` data.
-- **`imp-registry`** depends on `imp-core-types`. Library packages **must not** depend on the registry.
-- **`imp-sql`** and **`imp-execution`** depend on the registry plus the libraries they lower or execute. They implement semantics of catalog node types.
-- **`imp-react-flow`** depends on `imp-core-types` (and registry for port templates). No execution or SQL.
-
-## Dual read backends
-
-The same Imp graph IR supports two read paths:
-
-| Backend | Package | Role |
-| --- | --- | --- |
-| **Compile** | `imp-sql` | Lower collection/path graphs to SQL at compile time |
-| **Execute** | `imp-execution` | Walk the DAG at runtime via a read-only host |
-
-Hosts choose compile (relational backends) or execute (flatfile, custom stores). Operator semantics are shared; only data access differs.
+- **`imp-registry`**, **`imp-typecheck`**, and **`imp-graph-resolve`** depend on `imp-core-types` (and registry for typecheck/resolve). Library packages **must not** depend on the registry.
+- **Imp Translators** (`imp-sql`, `imp-react-flow`) and **runtime** (`imp-execution`) live in language bindings — see [`imp-ts/docs/features/`](../../imp-ts/docs/features/). They consume registry + NodeLibrary catalogs + graph-resolve.
 
 ## Shared contracts
 
-| Concern | Defined in | Used by |
+| Concern | Defined in | Consumed by |
 | --- | --- | --- |
-| Input port resolution order | [graph-model](../packages/imp-core-types/graph-model.md) | sql, execution |
-| Core boundary nodes (`input`, `output`, `parameter`) | [graph-model](../packages/imp-core-types/graph-model.md) | collection-transforms, pathing, sql, execution |
+| Input port resolution order | [graph-model](../packages/imp-core-types/graph-model.md) | Translators, runtime |
+| Core boundary nodes (`input`, `output`, `parameter`) | [graph-model](../packages/imp-core-types/graph-model.md) | NodeLibrary catalogs, Translators, runtime |
 | `NodeLibrary` catalog pattern | [node-libraries](../packages/imp-core-types/node-libraries.md) | all libraries |
-| Registry composition + conflict policy | [registry](../packages/imp-registry/registry.md) | sql, execution, react-flow |
-| Collection transform catalog | [collection-transforms](../packages/imp-collection-transforms/collection-transforms.md) | pathing, sql, execution |
-| `traverse` hop semantics | [pathing](../packages/imp-pathing/pathing.md) | sql, execution |
-| `search` host-delegated | [collection-transforms](../packages/imp-collection-transforms/collection-transforms.md) | sql (not lowered), execution (`textSearch`) |
-| Read-only default / sandboxing | [execution](../packages/imp-execution/execution.md) | parity with sql SELECT-shaped profile |
+| `NodeImplementation` dispatch | [node-libraries](../packages/imp-core-types/node-libraries.md), [type-system](../packages/imp-typecheck/type-system.md) | Translators, runtime |
+| Registry composition + conflict policy | [registry](../packages/imp-registry/registry.md) | Translators, runtime |
+| Collection transform catalog | [collection-transforms](../packages/imp-collection-transforms/collection-transforms.md) | pathing, Translators, runtime |
+| `traverse` hop semantics | [pathing](../packages/imp-pathing/pathing.md) | Translators, runtime |
+| Late nested graph resolution | [resolve](../packages/imp-graph-resolve/resolve.md) | Translators, runtime |
+| `search` host-delegated | [collection-transforms](../packages/imp-collection-transforms/collection-transforms.md) | Translators (not translated generically), runtime |
 
 ## Language bindings
 
-Specs are language-neutral. Bindings implement equivalent packages from the same spec docs:
+Specs in this repo are language-neutral. Bindings implement equivalent packages:
 
 | Spec package | TypeScript (`imp-ts`) | Rust (`imp-rust`) |
 | --- | --- | --- |
 | `imp-core-types` | `packages/imp-core-types` | `crates/imp_core_types` |
 | `imp-registry` | `packages/imp-registry` | `crates/imp_registry` |
+| `imp-typecheck` | `packages/imp-typecheck` | `crates/imp_typecheck` |
+| `imp-graph-resolve` | `packages/imp-graph-resolve` | `crates/imp_graph_resolve` |
 | `imp-collection-transforms` | `packages/imp-collection-transforms` | `crates/imp_collection_transforms` |
 | `imp-pathing` | `packages/imp-pathing` | `crates/imp_pathing` |
-| `imp-execution` | `packages/imp-execution` | `crates/imp_execution` (deferred) |
-| `imp-sql` | `packages/imp-sql` | — (JS/Kysely only) |
-| `imp-react-flow` | `packages/imp-react-flow` | — (React only) |
+
+**Imp Translators and runtime** (no imp-spec package docs — see [`imp-ts/docs/features/`](../../imp-ts/docs/features/)):
+
+| Package | TypeScript | Rust |
+| --- | --- | --- |
+| `imp-sql` (Translator) | `packages/imp-sql` | — (Kysely/JS only) |
+| `imp-react-flow` (Translator) | `packages/imp-react-flow` | — (React only) |
+| `imp-execution` (runtime) | `packages/imp-execution` | deferred |
 
 Rust crate names use **snake_case**; npm package names use hyphenated `imp-*`. When docs and a binding disagree, update the spec or the binding explicitly.
 

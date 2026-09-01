@@ -159,11 +159,11 @@ Graphs act as **subgraphs** with an external interface. Core Imp ships boundary 
 | --- | --- | --- |
 | `input` | outputs: single `value` port | Brings a value **into** the graph from outside |
 | `output` | inputs: single `value` port | Sends a value **out** of the graph to the host |
-| `parameter` | inputs: optional `label` (`string`, default `""`), `value` (`any`, default `null`); outputs: `value` (`T`) | Declares a host-configurable graph parameter. The instance `value` is the default; hosts may override it at execute time. `label` is UI metadata (not used in SQL). Lowers like `literal` (bound parameter / literal from `value`). Boundary nodes are polymorphic over `T` on `value` ports — see [node-libraries.md](./node-libraries.md). |
+| `parameter` | inputs: optional `label` (`string`, default `""`), `value` (`any`, default `null`); outputs: `value` (`T`) | Declares a host-configurable graph parameter. The instance `value` is the default; hosts may override it at execute time. `label` is UI metadata (not used in SQL). Translates like `literal` (bound parameter / literal from `value`). Boundary nodes are polymorphic over `T` on `value` ports — see [node-libraries.md](./node-libraries.md). |
 
 **One node instance per boundary port** (not a multi-port patch board). A subgraph with three inputs and one output is three `input` nodes + one `output` node. Editors may group boundary nodes visually without changing the transmission model.
 
-A host wires external values into `input` nodes and reads results from `output` nodes. Hosts that expose settings UI discover `parameter` nodes, present `label` + current `value`, and bind overrides into each parameter node's `inputs.value` before lowering. Reusable subgraphs are **`NodeDefinition` entries with `body` + `bindings`** — see [node-libraries.md](./node-libraries.md) and [graph-libraries.md](./graph-libraries.md). Parent graphs reference them by `Node.type`; resolution is late — see [resolve.md](../imp-graph-resolve/resolve.md).
+A host wires external values into `input` nodes and reads results from `output` nodes. Hosts that expose settings UI discover `parameter` nodes, present `label` + current `value`, and bind overrides into each parameter node's `inputs.value` before translation. Reusable subgraphs are **`NodeDefinition` entries with `body` + `bindings`** — see [node-libraries.md](./node-libraries.md) and [graph-libraries.md](./graph-libraries.md). Parent graphs reference them by `Node.type`; resolution is late — see [resolve.md](../imp-graph-resolve/resolve.md).
 
 ### Invariants (well-formed graphs)
 
@@ -180,7 +180,7 @@ These are design requirements for validators and converters:
 
 ## Design rationale
 
-- **Port-level edges** keep connectivity precise when a node has many inputs/outputs, and align with handle-based UI graphs (see [react-flow.md](../imp-react-flow/react-flow.md)).
+- **Port-level edges** keep connectivity precise when a node has many inputs/outputs, and align with handle-based UI graphs.
 - **Nodes as functions** — catalog `NodeDefinition` ports are parameter and return slots; instance `Node.inputs` hold local literal values for parameters.
 - **Instance literals on the node** — initial values must live somewhere; storing them on the instance (not a side map) matches common dataflow tooling and lets an edge override without discarding the local fallback.
 - **`defaultValue` on port templates** — required vs optional is expressed by omitting or setting a default on the catalog `Port`, not a separate flags field.
@@ -206,5 +206,4 @@ None.
 - [type-constraints.md](./type-constraints.md) — `TypeConstraint` / `TypeConstraintLibrary` catalogs
 - [type-system.md](../imp-typecheck/type-system.md) — static type checking
 - [registry.md](../imp-registry/registry.md) — loading libraries and looking up types
-- [react-flow.md](../imp-react-flow/react-flow.md)
 - Root [AGENTS.md](../../../AGENTS.md)

@@ -2,12 +2,12 @@
 
 ## Summary
 
-A **`NodeLibrary`** of GQL-like graph path operators (`traverse`, …) over a host-supplied node collection and edges relation. Library id `imp.pathing`. Catalog only — no execution. SQL lowering lives in [sql.md](../imp-sql/sql.md).
+A **`NodeLibrary`** of GQL-like graph path operators (`traverse`, …) over a host-supplied node collection and edges relation. Library id `imp.pathing`. Catalog only — no execution. Imp Translators consume this catalog.
 
 ## When to read this
 
 - Adding or changing path / hop node types
-- Authoring Imp graphs that walk host graph edges for SQL or other backends
+- Authoring Imp graphs that walk host graph edges for translation or runtime evaluation
 
 ## Requirements
 
@@ -34,31 +34,31 @@ Reuse the same signal ids as [collection-transforms.md](../imp-collection-transf
 
 ### No table source node
 
-There is **no** `from` / table-source node. The incoming node collection arrives via a core boundary **`input`** node or upstream transforms. Edge storage is host-defined at lower time (see [sql.md](../imp-sql/sql.md) `RelationalSchema.edges`).
+There is **no** `from` / table-source node. The incoming node collection arrives via a core boundary **`input`** node or upstream transforms. Edge storage is host-defined at translation time.
 
 ### Node types
 
 | NodeType | Inputs | Outputs | Notes |
 | --- | --- | --- | --- |
-| `traverse` | `collection` (`collection<T>`), `association` (`string`), `direction` (`number`, default `0`), `edge_property` (`string`, default `null`), `edge_equals` (`any`, default `null`) | `collection` (`collection<T>`) | One hop: for each source row identity (`id`), follow host edges where `source = id` and `type = hostEdgeType(association, direction)`, emit distinct target nodes as the new collection. When the host edges relation has a JSON `propertiesColumn`, overlay hop-edge properties onto each target's `properties` so downstream `project` / `group` can read them. When both `edge_property` and `edge_equals` are non-null, also require the hop edge's JSON property named by `edge_property` to equal `edge_equals`. Hosts may map `edge_equals` through `RelationalSchema.encodePropertyLiteral` at SQL compile time. |
+| `traverse` | `collection` (`collection<T>`), `association` (`string`), `direction` (`number`, default `0`), `edge_property` (`string`, default `null`), `edge_equals` (`any`, default `null`) | `collection` (`collection<T>`) | One hop: for each source row identity (`id`), follow host edges where `source = id` and `type = hostEdgeType(association, direction)`, emit distinct target nodes as the new collection. When the host edges relation has a JSON `propertiesColumn`, overlay hop-edge properties onto each target's `properties` so downstream `project` / `group` can read them. When both `edge_property` and `edge_equals` are non-null, also require the hop edge's JSON property named by `edge_property` to equal `edge_equals`. Hosts may map `edge_equals` through schema hooks at SQL translation time. |
 
 - Chained hops = multiple `traverse` nodes in the Imp DAG (not recursive / variable-length paths in v1).
 - `association` and `direction` are **separate** Imp values. Graphs must not pack them into one delimited string.
 - `direction` is `0` or `1` (endpoint index on a two-ended association).
-- Hosts map `(association, direction)` onto their edges `type` column via `RelationalSchema.edgeType` (default: use `association` alone).
-- Optional edge property filter requires `RelationalEdgesSchema.propertiesColumn` at SQL lower time; `edge_property` must be a simple identifier when set.
-- If exactly one of `edge_property` / `edge_equals` is non-null, lowering **must** throw.
+- Hosts map `(association, direction)` onto their edges `type` column at the translation boundary.
+- Optional edge property filter requires a host edges relation with a properties column; `edge_property` must be a simple identifier when set.
+- If exactly one of `edge_property` / `edge_equals` is non-null, translation **must** throw.
 - Result remains a **node collection**, so collection transforms keep working.
 
 ## Design rationale
 
-- Path operators are declarative catalog data so editors and lowerers share one vocabulary.
-- Keeping the catalog SQL-free lets other backends interpret the same graphs.
+- Path operators are declarative catalog data so editors and Imp Translators share one vocabulary.
+- Keeping the catalog format-agnostic lets other backends interpret the same graphs.
 - Explicit `association` + `direction` ports keep Imp graphs readable without host-specific string tokenization; hosts may still encode a packed type string at the SQL boundary if their storage requires it.
 
 ## Behavior / pipeline
 
-This library ships **data only**. Compose with `imp-registry` (`loadLibrary`) and lower with `imp-sql` ([sql.md](../imp-sql/sql.md)).
+This library ships **data only**. Compose with `imp-registry` (`loadLibrary`); Imp Translators and runtime consumers consume the catalog.
 
 Typical pipeline:
 
@@ -74,5 +74,4 @@ None.
 - [collection-transforms.md](../imp-collection-transforms/collection-transforms.md)
 - [graph-model.md](../imp-core-types/graph-model.md)
 - [node-libraries.md](../imp-core-types/node-libraries.md)
-- [sql.md](../imp-sql/sql.md)
 - Root [AGENTS.md](../../../AGENTS.md)

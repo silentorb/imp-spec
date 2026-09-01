@@ -2,7 +2,7 @@
 
 ## Summary
 
-A **`NodeLibrary`** of common functional collection combinators (`filter`, `sort`, `limit`, …) and predicate/scalar helpers. Library id `imp.collection.transforms`. Catalog only — no execution. SQL lowering lives in [sql.md](../imp-sql/sql.md).
+A **`NodeLibrary`** of common functional collection combinators (`filter`, `sort`, `limit`, …) and predicate/scalar helpers. Library id `imp.collection.transforms`. Catalog only — no execution. Imp Translators consume this catalog.
 
 ## When to read this
 
@@ -50,10 +50,10 @@ There is **no** `from` / table-source node. The incoming collection arrives via 
 | `limit` | `collection` (`collection<T>`), `count` (`number`) | `collection` (`collection<T>`) | Take first `count` rows |
 | `offset` | `collection` (`collection<T>`), `count` (`number`) | `collection` (`collection<T>`) | Skip first `count` rows |
 | `project` | `collection` (`collection<T>`), `columns` (`string`) | `collection` (`collection<T>`) | `columns` is a comma-separated column name list (v1) |
-| `group` | `collection` (`collection<T>`), `column` (`string`), `direction` (`string`, default `"asc"`) | `collection` (`collection<T>`) | Partition rows by `column`; `direction` is `"asc"` or `"desc"`. Rows stay flat; hosts use group order for bands/sections. SQL lowering is `ORDER BY` on the group column; partition and enum-weight sort happen after execute. |
-| `search` | `collection` (`collection<T>`), `query` (`string`) | `collection` (`collection<T>`) | Declarative text retrieval. Imp defines intent only — ranking, field coverage, fuzzy matching, case rules, empty-query behavior, and preview metadata are **host-defined**. Generic `imp-sql` does **not** lower `search`; hosts intercept at compile or execute (see [sql.md](../imp-sql/sql.md)). |
+| `group` | `collection` (`collection<T>`), `column` (`string`), `direction` (`string`, default `"asc"`) | `collection` (`collection<T>`) | Partition rows by `column`; `direction` is `"asc"` or `"desc"`. Rows stay flat; hosts use group order for bands/sections. Translators may emit `ORDER BY` on the group column; partition and enum-weight sort happen after execute. |
+| `search` | `collection` (`collection<T>`), `query` (`string`) | `collection` (`collection<T>`) | Declarative text retrieval. Imp defines intent only — ranking, field coverage, fuzzy matching, case rules, empty-query behavior, and preview metadata are **host-defined**. Generic SQL translation does **not** translate `search`; hosts intercept at compile or execute. |
 
-`except` is **declarative** only. Lowerers must resolve it lazily (e.g. SQL anti-membership over a subquery). They must **not** materialize `exclude` into an in-memory id set and subtract.
+`except` is **declarative** only. Imp Translators must resolve it lazily (e.g. SQL anti-membership over a subquery). They must **not** materialize `exclude` into an in-memory id set and subtract.
 
 #### Predicates
 
@@ -77,13 +77,13 @@ There is **no** `from` / table-source node. The incoming collection arrives via 
 
 ## Design rationale
 
-- Combinators are declarative catalog data so editors and lowerers share one vocabulary.
+- Combinators are declarative catalog data so editors and Imp Translators share one vocabulary.
 - Host-provided collections (via core `input`) integrate as collection → collection functions without baking table names into Imp.
 - Full-word type ids keep graphs readable in UI and docs.
 
 ## Behavior / pipeline
 
-This library ships **data only**. Compose with `imp-registry` (`loadLibrary`) and lower with `imp-sql` ([sql.md](../imp-sql/sql.md)).
+This library ships **data only**. Compose with `imp-registry` (`loadLibrary`); Imp Translators and runtime consumers consume the catalog.
 
 Typical pipeline:
 
@@ -99,5 +99,4 @@ None.
 
 - [graph-model.md](../imp-core-types/graph-model.md)
 - [node-libraries.md](../imp-core-types/node-libraries.md)
-- [sql.md](../imp-sql/sql.md)
 - Root [AGENTS.md](../../../AGENTS.md)

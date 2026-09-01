@@ -6,6 +6,12 @@
 
 Imp succeeds [imp-kotlin](https://github.com/silentorb/imp-kotlin) but keeps only the **graph data layer** (no text/code language layer).
 
+## Scope boundary
+
+imp-spec covers the **graph IR**, **NodeLibrary** operator catalogs, **`NodeImplementation` dispatch rules**, registry, typecheck, and graph-resolve. **Imp Translator** specs (format translation — e.g. Imp → SQL, Imp ↔ React Flow) and **runtime** specs (in-place execution) document themselves in [`imp-ts/docs/features/`](../imp-ts/docs/features/).
+
+Use **Imp Translator** for packages that translate Imp graphs to other formats (not Adapter, not Resolver, not lowerer).
+
 | Package | Role | Spec |
 | --- | --- | --- |
 | `imp-core-types` | Core graph + library interfaces; core boundary `NodeLibrary` | [graph-model](./docs/packages/imp-core-types/graph-model.md), [node-libraries](./docs/packages/imp-core-types/node-libraries.md), [graph-libraries](./docs/packages/imp-core-types/graph-libraries.md), [type-constraints](./docs/packages/imp-core-types/type-constraints.md) |
@@ -13,11 +19,8 @@ Imp succeeds [imp-kotlin](https://github.com/silentorb/imp-kotlin) but keeps onl
 | `imp-typecheck` | Static signal-type checking for graphs | [type-system](./docs/packages/imp-typecheck/type-system.md) |
 | `imp-graph-library` | Parse and validate graph library JSON | [graph-libraries](./docs/packages/imp-core-types/graph-libraries.md) |
 | `imp-graph-resolve` | Late nested graph resolution (flatten / execution program) | [resolve](./docs/packages/imp-graph-resolve/resolve.md) |
-| `imp-react-flow` | Imp ↔ React Flow converters | [react-flow](./docs/packages/imp-react-flow/react-flow.md) |
 | `imp-collection-transforms` | Collection combinator `NodeLibrary` | [collection-transforms](./docs/packages/imp-collection-transforms/collection-transforms.md) |
 | `imp-pathing` | GQL-like path operator `NodeLibrary` | [pathing](./docs/packages/imp-pathing/pathing.md) |
-| `imp-sql` | Imp collection graphs → SQL | [sql](./docs/packages/imp-sql/sql.md) |
-| `imp-execution` | Dynamic runtime for collection/path graphs (read-only host) | [execution](./docs/packages/imp-execution/execution.md) |
 
 Cross-package architecture and authoring rules: [`docs/overview/`](./docs/overview/).
 
@@ -45,11 +48,9 @@ When docs and code disagree, update the doc or the code explicitly — do not le
 | Type constraint libraries (`TypeConstraint`, `TypeConstraintLibrary`) | [type-constraints.md](./docs/packages/imp-core-types/type-constraints.md) |
 | Static type checking | [type-system.md](./docs/packages/imp-typecheck/type-system.md) |
 | Registry load / lookup | [registry.md](./docs/packages/imp-registry/registry.md) |
-| React Flow integration / converters | [react-flow.md](./docs/packages/imp-react-flow/react-flow.md) |
 | Collection transform combinators | [collection-transforms.md](./docs/packages/imp-collection-transforms/collection-transforms.md) |
 | Path / hop operators | [pathing.md](./docs/packages/imp-pathing/pathing.md) |
-| Imp → SQL lowering | [sql.md](./docs/packages/imp-sql/sql.md) |
-| Dynamic execution | [execution.md](./docs/packages/imp-execution/execution.md) |
+| Imp Translators (SQL, React Flow) or runtime execution | [`imp-ts` docs/features](../imp-ts/docs/features/) |
 
 See [`docs/overview/authoring.md`](./docs/overview/authoring.md) for the feature-doc template.
 

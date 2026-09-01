@@ -2,7 +2,7 @@
 
 ## Summary
 
-Declarative **catalogs of node definitions** that library packages can ship without depending on a registry. Each `NodeDefinition` describes the external port interface for graph node instances; entries are either **primitive** (host lowering via `implementation`) or **graph-backed** (internal `body` graph). Type shapes live in `imp-core-types`; loading/lookup lives in `imp-registry`.
+Declarative **catalogs of node definitions** that library packages can ship without depending on a registry. Each `NodeDefinition` describes the external port interface for graph node instances; entries are either **primitive** (host translation via `implementation`) or **graph-backed** (internal `body` graph). Type shapes live in `imp-core-types`; loading/lookup lives in `imp-registry`.
 
 ## When to read this
 
@@ -67,7 +67,7 @@ Every key in `NodeDefinition.inputs` / `outputs` must appear in the correspondin
 
 Primitive `NodeDefinition` entries may share one graph-facing interface while resolving to **different host implementations** depending on resolved type arguments.
 
-`ImplementationId` is a string naming a host lowering/execution binding (often equal to `NodeDefinition.id` for universal nodes).
+`ImplementationId` is a string naming a host translation binding (often equal to `NodeDefinition.id` for universal nodes).
 
 #### NodeImplementation
 
@@ -117,10 +117,10 @@ For library-authored graph-backed definitions, **ULIDs** are recommended for `id
 ## Design rationale
 
 - **`Node` stays the graph instance**; **`NodeDefinition` is the catalog** so instance vs type naming stays clear (`Node.type` ↔ `NodeDefinition.id`).
-- **Single surface** — primitive operators and graph-backed composites both appear as `Node.type` references; whether internals are builtin lowering or a nested graph is a catalog concern.
+- **Single surface** — primitive operators and graph-backed composites both appear as `Node.type` references; whether internals are builtin translation or a nested graph is a catalog concern.
 - Library packages depend only on **`imp-core-types`**, so they can be published and composed without pulling registry machinery.
 - **`typeParams`** enable polymorphic definitions without a separate type-expression language.
-- **`implementation`** keeps the graph/catalog interface separate from host-specific lowering bindings.
+- **`implementation`** keeps the graph/catalog interface separate from host-specific translation bindings.
 - **`body` + `bindings`** replace the former separate `GraphType` catalog — declared ports are the external contract; `body` is the implementation.
 
 ## Behavior / pipeline
