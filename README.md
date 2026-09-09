@@ -2,12 +2,12 @@
 
 **Language-neutral design specs** for [Imp](https://github.com/silentorb/imp-ts) — a universal transmission format for directed acyclic graphs (DAGs).
 
-This repository is for agent and human authors of Imp capabilities. Implementations live in sibling repos:
+This repository is for agent and human authors of Imp capabilities. Implementations live in separate repos:
 
 | Repo | Role |
 | --- | --- |
-| [`imp-ts`](../imp-ts) | TypeScript binding (primary reference implementation) |
-| [`imp-rust`](../imp-rust) | Rust binding (optional) |
+| [`imp-ts`](https://github.com/silentorb/imp-ts) | TypeScript implementation (primary reference) |
+| [`imp-rs`](https://github.com/silentorb/imp-rs) | Rust implementation |
 
 ## Layout
 

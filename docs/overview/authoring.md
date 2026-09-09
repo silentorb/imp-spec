@@ -39,6 +39,6 @@ Imp specs describe Imp only. Do **not** mention downstream hosts, applications, 
 ## See also
 ```
 
-Binding-specific sections (`Quick start`, `Verification`, `Implementation pointers`) belong in language binding repos, not in imp-spec.
+Implementation-specific sections (`Quick start`, `Verification`, `Implementation pointers`) belong in language implementation repos, not in imp-spec.
 
 **Imp Translator and runtime specs** (SQL translation, React Flow, dynamic execution) belong in `imp-ts/docs/features/`, not in imp-spec.

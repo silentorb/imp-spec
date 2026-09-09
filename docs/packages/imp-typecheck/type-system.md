@@ -6,7 +6,7 @@
 
 ## When to read this
 
-- Implementing or changing type checking in language bindings
+- Implementing or changing type checking in language implementations
 - Understanding how polymorphic `NodeDefinition`s are validated
 
 ## Requirements

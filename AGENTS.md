@@ -2,13 +2,13 @@
 
 ## Repository purpose
 
-**Imp** is a universal transmission format for directed acyclic graphs (DAGs). This repo holds **language-neutral** design specs for Imp capabilities. Language bindings (TypeScript: [`imp-ts`](../imp-ts), Rust: [`imp-rust`](../imp-rust)) implement these specs.
+**Imp** is a universal transmission format for directed acyclic graphs (DAGs). This repo holds **language-neutral** design specs for Imp capabilities. Language implementations ([TypeScript: `imp-ts`](https://github.com/silentorb/imp-ts), [Rust: `imp-rs`](https://github.com/silentorb/imp-rs)) implement these specs.
 
 Imp succeeds [imp-kotlin](https://github.com/silentorb/imp-kotlin) but keeps only the **graph data layer** (no text/code language layer).
 
 ## Scope boundary
 
-imp-spec covers the **graph IR**, **NodeLibrary** operator catalogs, **`NodeImplementation` dispatch rules**, registry, typecheck, and graph-resolve. **Imp Translator** specs (format translation — e.g. Imp → SQL, Imp ↔ React Flow) and **runtime** specs (in-place execution) document themselves in [`imp-ts/docs/features/`](../imp-ts/docs/features/).
+imp-spec covers the **graph IR**, **NodeLibrary** operator catalogs, **`NodeImplementation` dispatch rules**, registry, typecheck, and graph-resolve. **Imp Translator** specs (format translation — e.g. Imp → SQL, Imp ↔ React Flow) and **runtime** specs (in-place execution) document themselves in [imp-ts `docs/features/`](https://github.com/silentorb/imp-ts/tree/main/docs/features/).
 
 Use **Imp Translator** for packages that translate Imp graphs to other formats (not Adapter, not Resolver, not lowerer).
 
@@ -31,7 +31,7 @@ Imp is **agent-spec driven**. Treat package specs under `docs/packages/` as the 
 | Layer | What | Regenerated? |
 | --- | --- | --- |
 | Specs | `docs/` in this repo | **No** — authored and maintained |
-| Code interfaces | Language binding packages (`imp-ts/packages/*/src`, etc.) | **Yes** — regenerable from the matching spec |
+| Code interfaces | Language implementation packages (`imp-ts/packages/*/src`, etc.) | **Yes** — regenerable from the matching spec |
 
 Specs must be language-neutral enough that an agent could emit equivalent interfaces in other languages without redesigning the model.
 
@@ -50,7 +50,7 @@ When docs and code disagree, update the doc or the code explicitly — do not le
 | Registry load / lookup | [registry.md](./docs/packages/imp-registry/registry.md) |
 | Collection transform combinators | [collection-transforms.md](./docs/packages/imp-collection-transforms/collection-transforms.md) |
 | Path / hop operators | [pathing.md](./docs/packages/imp-pathing/pathing.md) |
-| Imp Translators (SQL, React Flow) or runtime execution | [`imp-ts` docs/features](../imp-ts/docs/features/) |
+| Imp Translators (SQL, React Flow) or runtime execution | [imp-ts `docs/features`](https://github.com/silentorb/imp-ts/tree/main/docs/features/) |
 
 See [`docs/overview/authoring.md`](./docs/overview/authoring.md) for the feature-doc template.
 
@@ -60,7 +60,3 @@ See [`docs/overview/authoring.md`](./docs/overview/authoring.md) for the feature
 - **Prototypal stage — no backwards compatibility.** Delete old shapes; migrate consumers in the same change.
 - **One-way dependency:** Imp specs must not mention downstream consumers (hosts, applications). Host docs may link here.
 - Package ids use `imp-*` naming (`imp.core`, `imp.collection.transforms`, …).
-
-## Workbench integration
-
-In **silentorb-workbench**, this repo mounts at `.mnt/imp-spec/` (optional; host default `../imp-spec`, or `IMP_SPEC_REPO`). Bindings: TypeScript `.mnt/imp-ts/`, Rust `.mnt/imp-rust/` (optional; `IMP_RUST_REPO`). See [architecture bindings table](./docs/overview/architecture.md#language-bindings).

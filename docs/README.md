@@ -6,7 +6,7 @@ Everything under `./docs` is **primarily for AI agents** — stable, high-level 
 
 Package specs describe the **data model and behavior** in language-agnostic terms. They are authored and maintained in this repo.
 
-**Code type interfaces** in language bindings must be regenerable from those specs. An agent should be able to emit unambiguous interfaces from a spec alone. Do **not** treat specs as disposable output of the code.
+**Code type interfaces** in language implementations must be regenerable from those specs. An agent should be able to emit unambiguous interfaces from a spec alone. Do **not** treat specs as disposable output of the code.
 
 ## Layout
 
