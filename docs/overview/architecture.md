@@ -60,6 +60,7 @@ flowchart TB
 | Registry composition + conflict policy | [registry](../packages/imp-registry/registry.md) | Translators, runtime |
 | Collection transform catalog | [collection-transforms](../packages/imp-collection-transforms/collection-transforms.md) | pathing, Translators, runtime |
 | `traverse` hop semantics | [pathing](../packages/imp-pathing/pathing.md) | Translators, runtime |
+| Semantic path bind / desugar | [semantic-paths](../packages/imp-pathing/semantic-paths.md) | query helpers, Translators (after desugar) |
 | Late nested graph resolution | [resolve](../packages/imp-graph-resolve/resolve.md) | Translators, runtime |
 | `search` host-delegated | [collection-transforms](../packages/imp-collection-transforms/collection-transforms.md) | Translators (not translated generically), runtime |
 

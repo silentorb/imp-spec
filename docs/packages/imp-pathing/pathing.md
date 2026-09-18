@@ -71,6 +71,7 @@ None.
 
 ## See also
 
+- [semantic-paths.md](./semantic-paths.md) — ontology-resolved authoring paths (bind/desugar onto `traverse` / `column` / `project`)
 - [collection-transforms.md](../imp-collection-transforms/collection-transforms.md)
 - [graph-model.md](../imp-core-types/graph-model.md)
 - [node-libraries.md](../imp-core-types/node-libraries.md)

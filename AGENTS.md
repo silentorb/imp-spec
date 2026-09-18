@@ -20,7 +20,7 @@ Use **Imp Translator** for packages that translate Imp graphs to other formats (
 | `imp-graph-library` | Parse and validate graph library JSON | [graph-libraries](./docs/packages/imp-core-types/graph-libraries.md) |
 | `imp-graph-resolve` | Late nested graph resolution (flatten / execution program) | [resolve](./docs/packages/imp-graph-resolve/resolve.md) |
 | `imp-collection-transforms` | Collection combinator `NodeLibrary` | [collection-transforms](./docs/packages/imp-collection-transforms/collection-transforms.md) |
-| `imp-pathing` | GQL-like path operator `NodeLibrary` | [pathing](./docs/packages/imp-pathing/pathing.md) |
+| `imp-pathing` | GQL-like path operator `NodeLibrary`; semantic path bind/desugar | [pathing](./docs/packages/imp-pathing/pathing.md), [semantic-paths](./docs/packages/imp-pathing/semantic-paths.md) |
 
 Cross-package architecture and authoring rules: [`docs/overview/`](./docs/overview/).
 
@@ -50,6 +50,7 @@ When docs and code disagree, update the doc or the code explicitly — do not le
 | Registry load / lookup | [registry.md](./docs/packages/imp-registry/registry.md) |
 | Collection transform combinators | [collection-transforms.md](./docs/packages/imp-collection-transforms/collection-transforms.md) |
 | Path / hop operators | [pathing.md](./docs/packages/imp-pathing/pathing.md) |
+| Ontology-resolved semantic paths (bind / desugar) | [semantic-paths.md](./docs/packages/imp-pathing/semantic-paths.md) |
 | Imp Translators (SQL, React Flow) or runtime execution | [imp-ts `docs/features`](https://github.com/silentorb/imp-ts/tree/main/docs/features/) |
 
 See [`docs/overview/authoring.md`](./docs/overview/authoring.md) for the feature-doc template.

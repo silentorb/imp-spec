@@ -15,6 +15,7 @@ Each file under [`../packages/`](../packages/) is the **authoritative design spe
 | Late nested graph resolution | [resolve.md](../packages/imp-graph-resolve/resolve.md) |
 | Collection transforms | [collection-transforms.md](../packages/imp-collection-transforms/collection-transforms.md) |
 | Pathing | [pathing.md](../packages/imp-pathing/pathing.md) |
+| Semantic paths | [semantic-paths.md](../packages/imp-pathing/semantic-paths.md) |
 
 **Imp Translators and runtime** (SQL, React Flow, execution) are documented in [imp-ts `docs/features/`](https://github.com/silentorb/imp-ts/tree/main/docs/features/).
 
