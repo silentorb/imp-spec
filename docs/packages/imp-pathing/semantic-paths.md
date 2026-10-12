@@ -2,14 +2,16 @@
 
 ## Summary
 
-**Semantic paths** are the normal Imp authoring surface for navigate and project over a host ontology: an untagged token stream where each token is a type-scoped semantic id. A bind pass resolves each token to a property or relationship, then desugars to the technical catalog (`traverse`, `column` / `project`). Authors do not choose field vs edge operators, and ordinary identity does not require a trailing `.id` hop.
+**Semantic paths** are the normal Imp authoring surface for navigate and project over a host ontology: an untagged token stream. A bind pass resolves each token to a property or relationship, then desugars to the technical catalog (`traverse`, `column` / `project`). Authors do not choose field vs edge operators, and ordinary identity does not require a trailing `.id` hop.
+
+**Relationship tokens** are typically **global relational role ids** (host-defined ULIDs for each half of a relationship type). **Property tokens** remain type-scoped (e.g. column keys). Hosts may also expose type-scoped convenience tokens that resolve to the same relationship hop.
 
 This document is **normative** for the bind/desugar contract. The lowered operators remain specified in [pathing.md](./pathing.md) and [collection-transforms.md](../imp-collection-transforms/collection-transforms.md).
 
 ## When to read this
 
 - Implementing or changing ontology-resolved path bind / desugar
-- Defining a host `PathOntology` (type-scoped token → property or relationship)
+- Defining a host `PathOntology` (token → property or relationship; relationship tokens often global role ids)
 - Authoring query helpers that emit Imp DAGs without tagged `traverse` / `column` steps
 
 ## Requirements
@@ -25,10 +27,9 @@ Imp Translators and runtime consumers continue to see the technical DAG. Semanti
 
 ### Ontology integrity
 
-Within a **type context** (host type / type-table id):
-
-- Each semantic token resolves to **exactly one** of: property, or relationship (not both).
-- Tokens are author-facing ids (e.g. type-scoped column keys). They are **not** storage association ULIDs and **not** free-form perspective display labels unless those labels are also unique semantic ids in the ontology.
+- Each semantic token resolves to **exactly one** of: property, or relationship (not both) in the active resolve context.
+- **Property** tokens are type-scoped (e.g. column keys on the current type).
+- **Relationship** tokens are preferably **global relational role ids** (unique across the host ontology). Hosts may also accept type-scoped aliases that lower to the same `association` + `direction`. Tokens are **not** free-form display labels unless those labels are also registered as unique semantic ids.
 - Hosts **must not** guess kind at runtime (no try-edge-then-field). Ambiguous or unknown tokens **must** fail at bind time.
 
 ### PathOntology (host contract)
@@ -37,16 +38,16 @@ A host supplies a `PathOntology` with:
 
 | Operation | Behavior |
 | --- | --- |
-| `resolve(typeId, token)` | Returns a binding for `token` in type context `typeId`, or a structured error |
+| `resolve(typeId, token)` | Returns a binding for `token`. `typeId` is the current type context (required for properties; relationship role ids may ignore it). Structured error if unknown / ambiguous. |
 
 Binding shapes:
 
 | Kind | Fields | Endpoint | Next type context |
 | --- | --- | --- | --- |
 | **property** | property name (logical column id) | Scalar value | None — path must end (no further tokens) |
-| **relationship** | `association` (string), `direction` (`0` \| `1`), optional edge filter ports | Node collection (or singleton when cardinality is 1) | `nextType` — type id of related nodes for further tokens |
+| **relationship** | `association` (string), `direction` (`0` \| `1`), optional edge filter ports | Node collection (or singleton when cardinality is 1) | `nextType` — type id of related nodes for further tokens (optional when the hop is terminal / opposite endpoint is open) |
 
-- `association` and `direction` match [pathing.md](./pathing.md) `traverse` ports (separate values; no packed delimited string in the Imp DAG).
+- `association` and `direction` match [pathing.md](./pathing.md) `traverse` ports (separate values; no packed delimited string in the Imp DAG). Hosts typically derive them from a relational role id.
 - `nextType` is required for relationship bindings when further path tokens may follow; bind **must** error if a subsequent token is present and `nextType` is absent.
 
 ### Resolve pass
@@ -106,7 +107,7 @@ Implementations **must not**:
 
 - Normal queries should navigate by semantic ids; tooling that manages relationships explicitly can still author `traverse` / `column` directly.
 - Keeping the catalog IR on today’s operators preserves existing Translators and hosts while the authoring layer gains ontology-resolved paths.
-- Type-scoped integrity makes untagged tokens safe; global uniqueness is a stronger corpus rule left to hosts.
+- Global relational role ids make relationship hops addressable without packing type + direction into the authoring token; property tokens stay type-scoped.
 
 ## Behavior / pipeline
 
@@ -123,7 +124,7 @@ None beyond the host-supplied `PathOntology` and desugar options (`prefix`, sour
 
 - **Path-valued predicates:** path as a filter argument (or matches-path op) compiling to `EXISTS` / semi-join without replacing the outer collection.
 - Hosts wiring `PathOntology` from their schema files and query UIs.
-- Optional corpus-global semantic ids (requires migration where keys collide across types).
+- Broader host surfaces switching from relationship-type + endpoint references to relational role ids (filters, table schemas, etc.).
 
 ## See also
 
