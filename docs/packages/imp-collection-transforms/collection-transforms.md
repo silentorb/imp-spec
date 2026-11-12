@@ -26,16 +26,21 @@ Use **full words** for `NodeTypeId`s unless the abbreviation is a widely underst
 
 | Id | Role |
 | --- | --- |
-| `collection` | **Container family** over an element type — not itself ordered or unordered; subtypes carry those properties. Future kinds include `set` and `map` (not implemented here). |
+| `collection` | **Container family** over an element type — not itself ordered or unordered; subtypes carry those properties. Future kinds include `map` (not implemented here). Not a filterable catalog interface by itself. |
 | `list` | Ordered collection of single values; **duplicates allowed**. Subtype of `collection` (`list` <: `collection`). |
+| `set` | Unordered collection of single values; **duplicates disallowed** (row identity / `id` for Imp rows). Subtype of `collection` (`set` <: `collection`). |
 | `boolean` | Predicate results |
 | `string` | Column names, sort direction, projected column lists |
 | `number` | Limits, offsets, numeric literals |
 | `any` | Top-type scalar / literal payload; unifies with any signal type in static checking |
 
-Family-level and identity-set transforms declare `typeParams: [{ id: "T" }]` and use `collection<T>` on collection ports. Order/position transforms use `list<T>` (`{ "id": "list", "args": [{ "param": "T" }] }`). Predicate and scalar helper nodes use concrete primitive types only.
+### Overloads (kind-specific)
 
-Family-level ops (`filter`, `project`, `search`) are polymorphic over the container family. Container-kind preservation and resolving them to concrete subtype implementations are **future work**.
+`filter`, `project`, `search`, and `except` are **overloaded symbols**: the library ships **two** `NodeDefinition` entries per id — one for `list<T>` and one for `set<T>` — with uniform shapes (`Kind<T> → Kind<T>`). There is **no** general `collection<T>` version.
+
+Typecheck selects the overload from wired edge types — see [type-system.md](../imp-typecheck/type-system.md). Each overload uses a distinct universal **implementation id** (`filter_list` / `filter_set`, etc.) so hosts can bind kind-specific lowering.
+
+Order/position transforms (`sort`, `limit`, `offset`, `group`) remain **list-only** (single definition each). Predicate and scalar helper nodes use concrete primitive types only.
 
 ### No table source node
 
@@ -45,18 +50,18 @@ There is **no** `from` / table-source node. The incoming collection arrives via 
 
 #### Transforms
 
-| NodeType | Inputs | Outputs | Notes |
-| --- | --- | --- | --- |
-| `filter` | `collection` (`collection<T>`), `predicate` (`boolean`) | `collection` (`collection<T>`) | Family-level: keep rows where predicate is true |
-| `except` | `collection` (`collection<T>`), `exclude` (`collection<T>`) | `collection` (`collection<T>`) | Keep rows from `collection` whose `id` does not appear in `exclude` (set difference by identity). Closer to a future `set` than to generic family semantics; stays on `collection` for now. |
-| `sort` | `collection` (`list<T>`), `column` (`string`), `direction` (`string`, default `"asc"`) | `collection` (`list<T>`) | `direction` is `"asc"` or `"desc"` |
-| `limit` | `collection` (`list<T>`), `count` (`number`) | `collection` (`list<T>`) | Take first `count` rows |
-| `offset` | `collection` (`list<T>`), `count` (`number`) | `collection` (`list<T>`) | Skip first `count` rows |
-| `project` | `collection` (`collection<T>`), `columns` (`string`) | `collection` (`collection<T>`) | Family-level: `columns` is a comma-separated column name list (v1) |
-| `group` | `collection` (`list<T>`), `column` (`string`), `direction` (`string`, default `"asc"`) | `collection` (`list<T>`) | Partition rows by `column`; `direction` is `"asc"` or `"desc"`. Rows stay flat; hosts use group order for bands/sections. Translators may emit `ORDER BY` on the group column; partition and enum-weight sort happen after execute. |
-| `search` | `collection` (`collection<T>`), `query` (`string`) | `collection` (`collection<T>`) | Family-level declarative text retrieval. Imp defines intent only — ranking, field coverage, fuzzy matching, case rules, empty-query behavior, and preview metadata are **host-defined**. Generic SQL translation does **not** translate `search`; hosts intercept at compile or execute. |
+| NodeType | Overloads | Inputs | Outputs | Implementation ids | Notes |
+| --- | --- | --- | --- | --- | --- |
+| `filter` | `list`, `set` | `collection` (`list<T>` or `set<T>`), `predicate` (`boolean`) | `collection` (same kind) | `filter_list`, `filter_set` | Keep rows where predicate is true |
+| `except` | `list`, `set` | `collection` (kind), `exclude` (same kind) | `collection` (same kind) | `except_list`, `except_set` | Keep rows from `collection` whose `id` does not appear in `exclude`. List overload preserves encounter order of the keep side. |
+| `sort` | `list` only | `collection` (`list<T>`), `column` (`string`), `direction` (`string`, default `"asc"`) | `collection` (`list<T>`) | `sort` | `direction` is `"asc"` or `"desc"` |
+| `limit` | `list` only | `collection` (`list<T>`), `count` (`number`) | `collection` (`list<T>`) | `limit` | Take first `count` rows |
+| `offset` | `list` only | `collection` (`list<T>`), `count` (`number`) | `collection` (`list<T>`) | `offset` | Skip first `count` rows |
+| `project` | `list`, `set` | `collection` (kind), `columns` (`string`) | `collection` (same kind) | `project_list`, `project_set` | `columns` is a comma-separated column name list (v1) |
+| `group` | `list` only | `collection` (`list<T>`), `column` (`string`), `direction` (`string`, default `"asc"`) | `collection` (`list<T>`) | `group` | Partition rows by `column`; `direction` is `"asc"` or `"desc"`. Rows stay flat; hosts use group order for bands/sections. Translators may emit `ORDER BY` on the group column; partition and enum-weight sort happen after execute. |
+| `search` | `list`, `set` | `collection` (kind), `query` (`string`) | `collection` (same kind) | `search_list`, `search_set` | Declarative text retrieval. Imp defines intent only — ranking, field coverage, fuzzy matching, case rules, empty-query behavior, and preview metadata are **host-defined**. Generic SQL translation does **not** translate `search`; hosts intercept at compile or execute. |
 
-Port **names** such as `collection` on `sort`/`limit` are unchanged; their **signal types** are `list<T>`.
+Port **names** such as `collection` on transforms are unchanged; **signal types** carry the concrete kind.
 
 `except` is **declarative** only. Imp Translators must resolve it lazily (e.g. SQL anti-membership over a subquery). They must **not** materialize `exclude` into an in-memory id set and subtract.
 
@@ -83,16 +88,17 @@ Port **names** such as `collection` on `sort`/`limit` are unchanged; their **sig
 ## Design rationale
 
 - Combinators are declarative catalog data so editors and Imp Translators share one vocabulary.
+- Kind-specific overloads under one symbol avoid a fake general `collection` filter while preserving `list → filter → limit` when the list overload is selected.
 - Host-provided collections (via core `input`) integrate as collection → collection functions without baking table names into Imp.
 - Full-word type ids keep graphs readable in UI and docs.
 
 ## Behavior / pipeline
 
-This library ships **data only**. Compose with `imp-registry` (`loadLibrary`); Imp Translators and runtime consumers consume the catalog.
+This library ships **data only**. Compose with `imp-registry` (`loadLibrary`); Imp Translators and runtime consumers consume the catalog. Hosts should resolve kind-specific **implementation ids** (via `resolveImplementation` after typecheck) when lowering or evaluating.
 
 Typical pipeline:
 
-1. Core `input` (collection) → `filter` / `except` / `sort` / `group` / `limit` / … → core `output`.
+1. Core `input` (`list` or `set`) → `filter` / `except` / `sort` / `group` / `limit` / … → core `output`.
 2. Predicates and scalars attach as subgraphs into `filter.predicate` (and similar).
 3. `except.exclude` is a second collection-producing subgraph (often sharing the same `input`, e.g. via `traverse`).
 
@@ -104,4 +110,5 @@ None.
 
 - [graph-model.md](../imp-core-types/graph-model.md)
 - [node-libraries.md](../imp-core-types/node-libraries.md)
+- [type-system.md](../imp-typecheck/type-system.md)
 - Root [AGENTS.md](../../../AGENTS.md)

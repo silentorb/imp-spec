@@ -65,7 +65,7 @@ Every key in `NodeDefinition.inputs` / `outputs` must appear in the correspondin
 
 ### Implementation dispatch
 
-Primitive `NodeDefinition` entries may share one graph-facing interface while resolving to **different host implementations** depending on resolved type arguments.
+Primitive `NodeDefinition` entries may share one graph-facing **signature** while resolving to **different host implementations** depending on resolved type arguments. That is distinct from **overload sets** (multiple signatures under one `NodeTypeId`) — see below.
 
 `ImplementationId` is a string naming a host translation binding (often equal to `NodeDefinition.id` for universal nodes).
 
@@ -104,7 +104,18 @@ Tagged union:
 
 A named, declarative collection of `NodeDefinition`s. Libraries **must not** require `imp-registry`; they implement the core library interface alone.
 
-Each definition's `id` must be unique within the library. Port map key / `Port.id` equality matches [graph-model.md](./graph-model.md).
+### Overload sets
+
+Multiple `NodeDefinition` entries **may share the same `id`**. Together they form an **overload set** for that `NodeTypeId` (the graph `Node.type` symbol).
+
+Rules:
+
+- Each entry is a full signature (ports, `typeParams`, `implementation` / body).
+- Signatures in one overload set should be **distinguishable** by port types so edge-driven selection can pick one — see [type-system.md](../imp-typecheck/type-system.md) (Overload resolution).
+- Loading **must reject** a new signature that is **equivalent** to an already-registered overload for the same id (same port ids with unify-equal types on each corresponding port after ignoring param renaming). Distinct kinds (e.g. `list<T>` vs `set<T>` on the same port names) are allowed.
+- `implementation.dispatch` remains a mechanism **within one signature**. Kind-specific authoring polymorphism uses overload sets (e.g. `filter` as `list→list` and `set→set`), typically with distinct universal implementation ids such as `filter_list` / `filter_set`.
+
+Port map key / `Port.id` equality matches [graph-model.md](./graph-model.md).
 
 Graph-backed definitions in JSON files use the same shape — see [graph-libraries.md](./graph-libraries.md).
 
@@ -121,6 +132,7 @@ For library-authored graph-backed definitions, **ULIDs** are recommended for `id
 - Library packages depend only on **`imp-core-types`**, so they can be published and composed without pulling registry machinery.
 - **`typeParams`** enable polymorphic definitions without a separate type-expression language.
 - **`implementation`** keeps the graph/catalog interface separate from host-specific translation bindings.
+- **Overload sets** let one `Node.type` symbol map to kind-specific signatures without a single general family definition.
 - **`body` + `bindings`** replace the former separate `GraphType` catalog — declared ports are the external contract; `body` is the implementation.
 
 ## Behavior / pipeline
