@@ -74,8 +74,8 @@ Port **names** such as `collection` on transforms are unchanged; **signal types*
 | `not_equals` | `left` (`any`), `right` (`any`) | `value` (`boolean`) |
 | `less_than` | `left` (`any`), `right` (`any`) | `value` (`boolean`) |
 | `greater_than` | `left` (`any`), `right` (`any`) | `value` (`boolean`) |
-| `and` | `left` (`boolean`), `right` (`boolean`) | `value` (`boolean`) |
-| `or` | `left` (`boolean`), `right` (`boolean`) | `value` (`boolean`) |
+| `and` | `operands` (`boolean`, **variadic**) | `value` (`boolean`) | N-ary conjunction; inbound edges must set unique `Edge.order`; fold in ascending `order`. Unary (≥1 operand) is the identity. |
+| `or` | `operands` (`boolean`, **variadic**) | `value` (`boolean`) | N-ary disjunction; same order rules as `and`. |
 | `not` | `value` (`boolean`) | `value` (`boolean`) |
 
 #### Scalars

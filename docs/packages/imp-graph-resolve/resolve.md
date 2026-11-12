@@ -34,6 +34,7 @@ Recursively expands graph-backed node instances into a single flat graph suitabl
    - Apply `instantiateNodeDefinition` with instance `typeArgs`
    - Rename inner node/edge ids with prefix `${instanceId}::`
    - Rewire: parent inbound edges → bound input boundary ports; parent outbound edges ← bound output boundary ports
+   - **Variadic inputs:** do **not** splice N element wires onto a singleton `list` consumer. Collect parent edges targeting the variadic port (sorted by `Edge.order`), insert a core **`pack`** node (`typeArgs` = `[T]` for element type `T`), wire those sources into `pack.items` (preserving `order`), then single-edge rewire `pack.list` → former consumers of the bound boundary `input.value`. Remove the boundary `input` node as usual.
 4. Remove the composite instance node after splicing
 5. Repeat until no composite instances remain
 
@@ -63,10 +64,11 @@ Rules:
 
 For composite instance `C` with definition `D` and bindings `B`:
 
-- Edge `X.out → C.inPort` becomes wired to inner node `B.inputs[inPort]` at its `value` output
+- **Singleton** edge `X.out → C.inPort` becomes wired to inner node `B.inputs[inPort]` at its `value` output (flatten splices parent sources onto former boundary consumers after deleting the boundary node).
+- **Variadic** edges into `C.inPort` are gathered through **`pack`** into one `list<T>` edge that replaces the bound boundary `input`’s `value` output — see flatten step above. `buildExecutionProgram` must apply the same gather when entering a shared subgraph (insert `pack` at the call site or equivalent runtime wiring so the boundary sees `list<T>`).
 - Edge `C.outPort → Y.in` becomes wired from inner node `B.outputs[outPort]` at its `value` input
 
-Inner literal values on composite instance `C.inputs` map to inner boundary `input` node literals when present.
+Inner literal values on composite instance `C.inputs` map to inner boundary `input` node literals when present (singleton ports only; variadic inputs do not use literals).
 
 ### Error shape
 

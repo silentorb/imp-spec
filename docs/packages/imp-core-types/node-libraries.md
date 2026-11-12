@@ -47,6 +47,7 @@ Two kinds (discriminated by fields, not a separate enum):
 - Params are **scoped to the definition**; the checker unifies them across that definition's ports and with wired edges.
 - Graph **`Node.inputs`** are **local literal values** (`InputValues`), not `Ports` — see [graph-model.md](./graph-model.md).
 - **`defaultValue` on an input `Port`** makes that port optional; omitting it means the port is required.
+- **`variadic: true` on an input `Port`** marks multi-edge fan-in; `Port.type` is the element type. Allowed on both primitive and graph-backed definitions — see [graph-model.md](./graph-model.md).
 - Parent-graph `Node.type` references a `NodeDefinition.id` — no special reference node type. Transmitted graphs **never** embed resolved subgraph bodies on instances.
 
 ### BoundaryBindings
@@ -62,6 +63,8 @@ Maps each declared external port to a core boundary node in `body`:
 - `outputs[portId]` → an `output` node id in `body`
 
 Every key in `NodeDefinition.inputs` / `outputs` must appear in the corresponding bindings map. Bound boundary nodes must exist in `body.nodes` and have the expected core node types.
+
+**Variadic inputs:** bindings stay **1:1** (one declared port → one boundary `input` node). For a variadic declared input of element type `T`, the bound boundary `input`’s `value` type must be **`list<T>`** (not `T`). Late resolve gathers ordered parent edges via core `pack` into that list signal — see [resolve.md](../imp-graph-resolve/resolve.md) and [type-system.md](../imp-typecheck/type-system.md).
 
 ### Implementation dispatch
 
@@ -134,6 +137,7 @@ For library-authored graph-backed definitions, **ULIDs** are recommended for `id
 - **`implementation`** keeps the graph/catalog interface separate from host-specific translation bindings.
 - **Overload sets** let one `Node.type` symbol map to kind-specific signatures without a single general family definition.
 - **`body` + `bindings`** replace the former separate `GraphType` catalog — declared ports are the external contract; `body` is the implementation.
+- **Variadic → `list`** lets composites consume N ordered external wires as one internal sequence without a second container type.
 
 ## Behavior / pipeline
 

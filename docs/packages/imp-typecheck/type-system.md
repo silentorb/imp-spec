@@ -104,8 +104,10 @@ Validate a `Graph` against a registry:
 | Definition exists | Every `Node.type` resolves to a non-empty overload set via registry lookup |
 | Overload selection | Each overloaded node selects exactly one signature (see Overload resolution); ambiguity or no match → error |
 | Port existence | Every edge references valid ports on source/target **selected** definitions |
-| Edge compatibility | For each edge, source output type must be **assignable** to target input type under the fixed-point substitution |
-| Required inputs | Required ports (no default, no edge, no literal) are reported as errors |
+| Edge compatibility | For each edge, source output type must be **assignable** to target input type under the fixed-point substitution (for variadic targets, each inbound edge’s source must be assignable to the **element** `Port.type`) |
+| Required inputs | Required singleton ports (no default, no edge, no literal) are errors. Required variadic ports need **≥1** inbound edge |
+| Singleton multiplicity | More than one inbound edge on a non-variadic input → error |
+| Variadic `order` | Every edge targeting a variadic input must set `order`; `order` values must be **unique** among edges targeting the same `(node, port)` |
 | Type-param arity | When `Node.typeArgs` set, length must match the **selected** `NodeDefinition.typeParams` |
 | Unresolved params | After propagation, no free type variables remain on any wired port |
 | Type-param bounds | After inference, each resolved concrete type arg must satisfy every `TypeParam.bounds` entry |
@@ -119,7 +121,9 @@ Validate a single graph-backed `NodeDefinition`:
 1. `body` and `bindings` present; `implementation` absent
 2. Every declared input/output port has a binding entry
 3. Bound nodes exist in `body` with correct core types (`input` / `output`)
-4. Bound boundary port types unify with declared port types (after applying definition `typeParams`)
+4. Bound boundary port types match declared port types (after applying definition `typeParams`):
+   - **Non-variadic** inputs/outputs: unify boundary `value` type with the declared port type
+   - **Variadic** inputs: boundary `value` type must be **`list<T>`** where `T` is the declared element `Port.type` (unify / assignability against `listOf(declared.type)`)
 5. No unbound boundary nodes beyond those listed in bindings (surplus boundary nodes → error)
 
 ### checkGraphDefinitions
