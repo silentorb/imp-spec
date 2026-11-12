@@ -26,11 +26,12 @@ Use **full words** for `NodeTypeId`s unless the abbreviation is a widely underst
 
 | Id | Role |
 | --- | --- |
-| `collection` | Ordered/unordered row set (typically host nodes) flowing through path ops and collection transforms |
+| `collection` | **Container family** over an element type (typically host nodes). Same meaning as in [collection-transforms.md](../imp-collection-transforms/collection-transforms.md). |
+| `list` | Ordered collection of single values; duplicates allowed; subtype of `collection`. |
 | `string` | Association ids and other string literals |
 | `number` | Direction and other numeric literals |
 
-Reuse the same signal ids as [collection-transforms.md](../imp-collection-transforms/collection-transforms.md) so path results compose with `filter` / `sort` / `project`. `traverse` declares `typeParams: [{ id: "T" }]` and uses `collection<T>` on collection input and output ports.
+Reuse the same signal ids as [collection-transforms.md](../imp-collection-transforms/collection-transforms.md) so path results compose with `filter` / `sort` / `project`. `traverse` declares `typeParams: [{ id: "T" }]` and uses `collection<T>` on collection input and output ports. Its distinct-by-`id` emission is closer to a future `set` than to `list`; it stays on `collection` for now.
 
 ### No table source node
 

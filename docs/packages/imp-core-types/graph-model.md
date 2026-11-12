@@ -48,10 +48,11 @@ Optional `bounds` reference named constraints from a `TypeConstraintLibrary` —
 
 Rules:
 
-- **`args`** is only valid on the concrete variant (e.g. `collection<T>`).
+- **`args`** is only valid on the concrete variant (e.g. `collection<T>`, `list<T>`).
 - A concrete type with **no** `args` is a nullary signal type (e.g. `{ "id": "boolean" }`).
-- Bare `{ "id": "collection" }` without `args` is **not** a well-formed `collection` type after library migration — use `collection<any>` or a type parameter.
+- Bare `{ "id": "collection" }` or `{ "id": "list" }` without `args` is **not** a well-formed container type after library migration — use `collection<any>` / `list<any>` or a type parameter.
 - **`any`** is a concrete top type; static checking treats it as compatible with any other signal type.
+- Some concrete ids participate in a **fixed subtype relation** (e.g. `list` <: `collection`) enforced by `imp-typecheck` — see [type-system.md](../imp-typecheck/type-system.md).
 - Structural/record types and type aliases are out of scope for this revision — see [type-system.md](../imp-typecheck/type-system.md). Nominal type constraints on `TypeParam.bounds` are specified in [type-constraints.md](./type-constraints.md).
 
 ### PrimitiveValue

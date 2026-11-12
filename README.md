@@ -1,6 +1,16 @@
 # imp-spec
 
-**Language-neutral design specs** for [Imp](https://github.com/silentorb/imp-ts) — a universal transmission format for directed acyclic graphs (DAGs).
+This repository contains the specification for Imp.
+
+## What is Imp?
+
+**Imp** is a universal transmission format for directed acyclic graphs (DAGs).
+
+Imp defines a portable graph data model: nodes with typed ports, edges that connect ports, and a graph record keyed by ids. Packages in this repo are mostly specifications and converters/translators between Imp and other graph representations.
+
+Imp is the successor to [imp-kotlin](https://github.com/silentorb/imp-kotlin), narrowed to the **graph data layer** only (no text/code language layer).
+
+## Ecosystem
 
 This repository is for agent and human authors of Imp capabilities. Implementations live in separate repos:
 

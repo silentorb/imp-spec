@@ -27,7 +27,7 @@ A **catalog entry** listing concrete type patterns that satisfy the constraint.
 
 - Each `members[]` entry is a **concrete pattern** (nominal `id` + optional `args`), using the same pattern language as implementation dispatch `cases[].match` — see [node-libraries.md](./node-libraries.md).
 - `{ "id": "any" }` in a member pattern matches any concrete type when checked (wildcard).
-- Membership is **nominal**: constraint satisfaction is pattern match on resolved concrete type args, not structural record typing.
+- Membership uses **`signal_type_matches`**: nominal pattern match on resolved concrete type args, including the fixed core subtype relation (a subtype satisfies a supertype pattern; e.g. `list<string>` matches a `collection<string>` member). Not structural record typing. See [type-system.md](../imp-typecheck/type-system.md).
 
 A constraint's `id` must equal its key in the parent `TypeConstraintLibrary.constraints` map when the library is well-formed.
 

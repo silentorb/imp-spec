@@ -26,13 +26,16 @@ Use **full words** for `NodeTypeId`s unless the abbreviation is a widely underst
 
 | Id | Role |
 | --- | --- |
-| `collection` | Ordered/unordered row set flowing through transforms |
+| `collection` | **Container family** over an element type — not itself ordered or unordered; subtypes carry those properties. Future kinds include `set` and `map` (not implemented here). |
+| `list` | Ordered collection of single values; **duplicates allowed**. Subtype of `collection` (`list` <: `collection`). |
 | `boolean` | Predicate results |
 | `string` | Column names, sort direction, projected column lists |
 | `number` | Limits, offsets, numeric literals |
 | `any` | Top-type scalar / literal payload; unifies with any signal type in static checking |
 
-Collection-preserving transforms declare `typeParams: [{ id: "T" }]` and use `collection<T>` on collection ports (`{ "id": "collection", "args": [{ "param": "T" }] }`). Predicate and scalar helper nodes use concrete primitive types only.
+Family-level and identity-set transforms declare `typeParams: [{ id: "T" }]` and use `collection<T>` on collection ports. Order/position transforms use `list<T>` (`{ "id": "list", "args": [{ "param": "T" }] }`). Predicate and scalar helper nodes use concrete primitive types only.
+
+Family-level ops (`filter`, `project`, `search`) are polymorphic over the container family. Container-kind preservation and resolving them to concrete subtype implementations are **future work**.
 
 ### No table source node
 
@@ -44,14 +47,16 @@ There is **no** `from` / table-source node. The incoming collection arrives via 
 
 | NodeType | Inputs | Outputs | Notes |
 | --- | --- | --- | --- |
-| `filter` | `collection` (`collection<T>`), `predicate` (`boolean`) | `collection` (`collection<T>`) | Keep rows where predicate is true |
-| `except` | `collection` (`collection<T>`), `exclude` (`collection<T>`) | `collection` (`collection<T>`) | Keep rows from `collection` whose `id` does not appear in `exclude` (set difference by identity) |
-| `sort` | `collection` (`collection<T>`), `column` (`string`), `direction` (`string`, default `"asc"`) | `collection` (`collection<T>`) | `direction` is `"asc"` or `"desc"` |
-| `limit` | `collection` (`collection<T>`), `count` (`number`) | `collection` (`collection<T>`) | Take first `count` rows |
-| `offset` | `collection` (`collection<T>`), `count` (`number`) | `collection` (`collection<T>`) | Skip first `count` rows |
-| `project` | `collection` (`collection<T>`), `columns` (`string`) | `collection` (`collection<T>`) | `columns` is a comma-separated column name list (v1) |
-| `group` | `collection` (`collection<T>`), `column` (`string`), `direction` (`string`, default `"asc"`) | `collection` (`collection<T>`) | Partition rows by `column`; `direction` is `"asc"` or `"desc"`. Rows stay flat; hosts use group order for bands/sections. Translators may emit `ORDER BY` on the group column; partition and enum-weight sort happen after execute. |
-| `search` | `collection` (`collection<T>`), `query` (`string`) | `collection` (`collection<T>`) | Declarative text retrieval. Imp defines intent only — ranking, field coverage, fuzzy matching, case rules, empty-query behavior, and preview metadata are **host-defined**. Generic SQL translation does **not** translate `search`; hosts intercept at compile or execute. |
+| `filter` | `collection` (`collection<T>`), `predicate` (`boolean`) | `collection` (`collection<T>`) | Family-level: keep rows where predicate is true |
+| `except` | `collection` (`collection<T>`), `exclude` (`collection<T>`) | `collection` (`collection<T>`) | Keep rows from `collection` whose `id` does not appear in `exclude` (set difference by identity). Closer to a future `set` than to generic family semantics; stays on `collection` for now. |
+| `sort` | `collection` (`list<T>`), `column` (`string`), `direction` (`string`, default `"asc"`) | `collection` (`list<T>`) | `direction` is `"asc"` or `"desc"` |
+| `limit` | `collection` (`list<T>`), `count` (`number`) | `collection` (`list<T>`) | Take first `count` rows |
+| `offset` | `collection` (`list<T>`), `count` (`number`) | `collection` (`list<T>`) | Skip first `count` rows |
+| `project` | `collection` (`collection<T>`), `columns` (`string`) | `collection` (`collection<T>`) | Family-level: `columns` is a comma-separated column name list (v1) |
+| `group` | `collection` (`list<T>`), `column` (`string`), `direction` (`string`, default `"asc"`) | `collection` (`list<T>`) | Partition rows by `column`; `direction` is `"asc"` or `"desc"`. Rows stay flat; hosts use group order for bands/sections. Translators may emit `ORDER BY` on the group column; partition and enum-weight sort happen after execute. |
+| `search` | `collection` (`collection<T>`), `query` (`string`) | `collection` (`collection<T>`) | Family-level declarative text retrieval. Imp defines intent only — ranking, field coverage, fuzzy matching, case rules, empty-query behavior, and preview metadata are **host-defined**. Generic SQL translation does **not** translate `search`; hosts intercept at compile or execute. |
+
+Port **names** such as `collection` on `sort`/`limit` are unchanged; their **signal types** are `list<T>`.
 
 `except` is **declarative** only. Imp Translators must resolve it lazily (e.g. SQL anti-membership over a subquery). They must **not** materialize `exclude` into an in-memory id set and subtract.
 
