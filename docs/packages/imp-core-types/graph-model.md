@@ -113,11 +113,15 @@ Only keys that are valid input ports on the node's `NodeDefinition` should appea
 | Field | Type | Required |
 | --- | --- | --- |
 | `id` | `NodeId` | must |
+| `title` | `string` | may |
 | `type` | `NodeTypeId` | must |
 | `typeArgs` | `SignalType[]` | may |
 | `inputs` | `InputValues` | must (may be empty) |
 
-A **node instance**: identity, type reference, and local literal input values. Port templates (signal types, defaults, output ports) live on the catalog `NodeDefinition` — see [node-libraries.md](./node-libraries.md).
+A **node instance**: identity, optional display label, type reference, and local literal input values. Port templates (signal types, defaults, output ports) live on the catalog `NodeDefinition` — see [node-libraries.md](./node-libraries.md).
+
+- **`id`** is the stable identity (map key and edge/`PortReference` target). Hosts may use opaque ids (e.g. ULIDs); format is not enforced.
+- **`title`** is an optional human-facing label. Editors display `title` when present, otherwise `id`. Omit `title` when the graph has no human-facing labeling need (machine-only graphs, structural fixtures). Titles are not unique and are not used as edge endpoints.
 
 When the catalog `NodeDefinition` declares `typeParams`, `typeArgs` supplies **concrete** `SignalType` values for those parameters in declaration order. Omit `typeArgs` when edge wiring provides enough constraints for the checker to infer them; required when a polymorphic node has no inferrable inputs (e.g. a standalone boundary `input` node).
 
