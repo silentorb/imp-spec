@@ -153,6 +153,8 @@ An edge's identity is its key in `Graph.edges` (`EdgeId`); the `Edge` value itse
 
 Maps in other languages should use that language's idiomatic string-keyed dictionary.
 
+**Edges are the graph’s topology.** `Graph.nodes` is the **local** instance map for this graph document (type, title, literals). An edge may reference a `NodeId` that has no entry in `Graph.nodes`. Resolving an endpoint today means looking it up in that local map; hosts and validators treat unresolved ids as errors. A later revision may widen resolution beyond the local map (decentralized / networked graphs) without changing `Edge` / `PortReference` shape.
+
 ### Input port resolution
 
 #### Singleton inputs
@@ -191,8 +193,8 @@ These are design requirements for validators and converters:
 
 1. Every `Node.id` must equal its key in `Graph.nodes`.
 2. Every `Port.id` must equal its key in the parent `Ports` map on a `NodeDefinition`.
-3. For every edge, `from.node` and `to.node` must exist in `Graph.nodes`.
-4. For every edge, `from.port` must exist in that node's `NodeDefinition.outputs`, and `to.port` must exist in that node's `NodeDefinition.inputs` (when types are known via a registry).
+3. Every edge endpoint `from.node` / `to.node` must **resolve** for the graph to be executable / fully typed. Today resolution is membership in `Graph.nodes`; unresolved ids are validation errors (not a serialization prohibition). Edges may still be stored without a matching local node entry.
+4. For every edge whose endpoints resolve and whose types are known via a registry, `from.port` must exist in that node's `NodeDefinition.outputs`, and `to.port` must exist in that node's `NodeDefinition.inputs`.
 5. `Node.inputs` keys must be valid input `PortId`s for the node's `NodeDefinition` (when type is known).
 6. Required singleton input ports (no `defaultValue`, no incoming edge, no local literal) are ill-formed when validated. Required variadic inputs need ≥1 inbound edge.
 7. A singleton input port **may** have both an edge and a local literal; the edge wins at resolution. Variadic inputs do not use literals/`defaultValue`.
@@ -209,6 +211,7 @@ These are design requirements for validators and converters:
 - **`SignalType`** names the Imp type of a signal on a port; the concrete / variable union supports opaque generics (`collection<T>`) without a separate type-expression AST.
 - **Record/map keyed by id** makes merge, lookup, and partial update straightforward for transmission and UI state.
 - **Separate `EdgeId`** allows multiple edges and stable identity without encoding topology into the id; **`Edge.order`** sequences variadic fan-in independently of id.
+- **Edges vs local nodes** — topology lives in `Graph.edges`; `Graph.nodes` holds local instance data. Decoupling them allows incomplete or decentralized graphs to carry wires whose endpoints are resolved later or elsewhere.
 - **Boundary `input` / `output` / `parameter` / `pack` nodes** — `input`/`output` are one instance per host port; `parameter` declares host-configurable defaults; `pack` turns ordered element wires into `list<T>`.
 - **Catalog vs instance** — `NodeDefinition` holds port templates (and optional `body`); `Node` holds identity, type id, and local input values (`Node.type` ↔ `NodeDefinition.id`). See [node-libraries.md](./node-libraries.md).
 

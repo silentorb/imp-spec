@@ -103,8 +103,9 @@ Validate a `Graph` against a registry:
 | --- | --- |
 | Definition exists | Every `Node.type` resolves to a non-empty overload set via registry lookup |
 | Overload selection | Each overloaded node selects exactly one signature (see Overload resolution); ambiguity or no match → error |
-| Port existence | Every edge references valid ports on source/target **selected** definitions |
-| Edge compatibility | For each edge, source output type must be **assignable** to target input type under the fixed-point substitution (for variadic targets, each inbound edge’s source must be assignable to the **element** `Port.type`) |
+| Endpoint resolution | Every edge `from.node` / `to.node` must resolve (today: present in `Graph.nodes`); unresolved → error. Edges without a local node entry are allowed in the data shape but fail this check |
+| Port existence | Every edge whose endpoints resolve references valid ports on source/target **selected** definitions |
+| Edge compatibility | For each edge with resolved endpoints, source output type must be **assignable** to target input type under the fixed-point substitution (for variadic targets, each inbound edge’s source must be assignable to the **element** `Port.type`) |
 | Required inputs | Required singleton ports (no default, no edge, no literal) are errors. Required variadic ports need **≥1** inbound edge |
 | Singleton multiplicity | More than one inbound edge on a non-variadic input → error |
 | Variadic `order` | Every edge targeting a variadic input must set `order`; `order` values must be **unique** among edges targeting the same `(node, port)` |
