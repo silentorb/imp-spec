@@ -153,7 +153,7 @@ An edge's identity is its key in `Graph.edges` (`EdgeId`); the `Edge` value itse
 
 Maps in other languages should use that language's idiomatic string-keyed dictionary.
 
-**Edges are the graph’s topology.** `Graph.nodes` is the **local** instance map for this graph document (type, title, literals). An edge may reference a `NodeId` that has no entry in `Graph.nodes`. Resolving an endpoint today means looking it up in that local map; hosts and validators treat unresolved ids as errors. A later revision may widen resolution beyond the local map (decentralized / networked graphs) without changing `Edge` / `PortReference` shape.
+**Edges are the graph’s topology.** `Graph.nodes` is the **local** instance map for this graph document (type, title, literals). An edge may reference a `NodeId` that has no entry in `Graph.nodes`. Resolving an endpoint means looking it up in that local map first; when absent, typecheck (and hosts that evaluate graphs) **may** consult an optional **host NodeId resolver** that supplies a synthetic node view and catalog-equivalent port templates for that id. An endpoint is **unresolved** only when it has no local entry **and** the host resolver misses (or no resolver is provided). This keeps `Edge` / `PortReference` shape unchanged for decentralized / multi-document graphs.
 
 ### Input port resolution
 

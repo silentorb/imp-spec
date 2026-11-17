@@ -103,7 +103,7 @@ Validate a `Graph` against a registry:
 | --- | --- |
 | Definition exists | Every `Node.type` resolves to a non-empty overload set via registry lookup |
 | Overload selection | Each overloaded node selects exactly one signature (see Overload resolution); ambiguity or no match → error |
-| Endpoint resolution | Every edge `from.node` / `to.node` must resolve (today: present in `Graph.nodes`); unresolved → error. Edges without a local node entry are allowed in the data shape but fail this check |
+| Endpoint resolution | Every edge `from.node` / `to.node` must **resolve**: present in `Graph.nodes`, or returned by an optional host NodeId resolver (synthetic node + definition/port templates). Unresolved (no local entry and host miss / no resolver) → error. Edges without a local node entry remain valid in the data shape when the host resolves them |
 | Port existence | Every edge whose endpoints resolve references valid ports on source/target **selected** definitions |
 | Edge compatibility | For each edge with resolved endpoints, source output type must be **assignable** to target input type under the fixed-point substitution (for variadic targets, each inbound edge’s source must be assignable to the **element** `Port.type`) |
 | Required inputs | Required singleton ports (no default, no edge, no literal) are errors. Required variadic ports need **≥1** inbound edge |
@@ -114,6 +114,8 @@ Validate a `Graph` against a registry:
 | Type-param bounds | After inference, each resolved concrete type arg must satisfy every `TypeParam.bounds` entry |
 
 Returns a list of structured errors (node id, port id, message). Empty list means success.
+
+`checkGraph` **may** accept an optional host **NodeId resolver**. When an edge endpoint is absent from `Graph.nodes`, the checker calls the resolver with that `NodeId`. A hit returns a synthetic `Node` (for identity / `typeArgs` scoping) plus a `NodeDefinition` (port templates) used like a selected local overload. A miss is an unresolved endpoint. Overload selection and edge assignability for **local** nodes must treat host-resolved neighbors the same as local selected definitions. Hosts that omit the resolver keep the prior behavior (any absent local endpoint is unresolved).
 
 ### checkDefinition
 
