@@ -14,7 +14,7 @@ Use **Imp Translator** for packages that translate Imp graphs to other formats (
 
 | Package | Role | Spec |
 | --- | --- | --- |
-| `imp-core-types` | Core graph + library interfaces; core boundary `NodeLibrary` | [graph-model](./docs/packages/imp-core-types/graph-model.md), [node-libraries](./docs/packages/imp-core-types/node-libraries.md), [graph-libraries](./docs/packages/imp-core-types/graph-libraries.md), [type-constraints](./docs/packages/imp-core-types/type-constraints.md) |
+| `imp-core-types` | Core graph + library interfaces; core boundary `NodeLibrary` | [graph-model](./docs/packages/imp-core-types/graph-model.md), [graph-sources](./docs/packages/imp-core-types/graph-sources.md), [node-libraries](./docs/packages/imp-core-types/node-libraries.md), [graph-libraries](./docs/packages/imp-core-types/graph-libraries.md), [type-constraints](./docs/packages/imp-core-types/type-constraints.md) |
 | `imp-registry` | Load `NodeLibrary` / `GraphLibrary` / `TypeConstraintLibrary` values and look up definitions | [registry](./docs/packages/imp-registry/registry.md) |
 | `imp-typecheck` | Static signal-type checking for graphs | [type-system](./docs/packages/imp-typecheck/type-system.md) |
 | `imp-graph-library` | Parse and validate graph library JSON | [graph-libraries](./docs/packages/imp-core-types/graph-libraries.md) |
@@ -42,6 +42,7 @@ When docs and code disagree, update the doc or the code explicitly — do not le
 | If your task involves… | Read |
 | --- | --- |
 | Core graph model (`Graph`, `Node`, `Edge`, ports, `InputValues`) | [graph-model.md](./docs/packages/imp-core-types/graph-model.md) |
+| Reading graphs through edge / node providers (`GraphSource`, local vs remote nodes) | [graph-sources.md](./docs/packages/imp-core-types/graph-sources.md) |
 | Node definition libraries (`NodeDefinition`, `NodeLibrary`) | [node-libraries.md](./docs/packages/imp-core-types/node-libraries.md) |
 | JSON graph libraries | [graph-libraries.md](./docs/packages/imp-core-types/graph-libraries.md) |
 | Late nested graph resolution | [resolve.md](./docs/packages/imp-graph-resolve/resolve.md) |

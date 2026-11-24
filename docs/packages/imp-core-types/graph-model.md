@@ -153,7 +153,7 @@ An edge's identity is its key in `Graph.edges` (`EdgeId`); the `Edge` value itse
 
 Maps in other languages should use that language's idiomatic string-keyed dictionary.
 
-**Edges are the graph’s topology.** `Graph.nodes` is the **local** instance map for this graph document (type, title, literals). An edge may reference a `NodeId` that has no entry in `Graph.nodes`. Resolving an endpoint means looking it up in that local map first; when absent, typecheck (and hosts that evaluate graphs) **may** consult an optional **host NodeId resolver** that supplies a synthetic node view and catalog-equivalent port templates for that id. An endpoint is **unresolved** only when it has no local entry **and** the host resolver misses (or no resolver is provided). This keeps `Edge` / `PortReference` shape unchanged for decentralized / multi-document graphs.
+**Edges are the graph’s topology.** `Graph.nodes` is the **local** instance map for this graph document (type, title, literals). An edge may reference a `NodeId` that has no entry in `Graph.nodes`. Algorithms do not read `Graph` directly: they read a [graph source](./graph-sources.md) — an edge provider plus a node provider — and a serialized `Graph` is one implementation of both (`graphSource(graph)`). Hosts may layer further node providers behind the document's own nodes. An endpoint is **unresolved** only when the graph source's node provider has no node for it. This keeps `Edge` / `PortReference` shape unchanged for decentralized / multi-document graphs.
 
 ### Input port resolution
 
@@ -193,7 +193,7 @@ These are design requirements for validators and converters:
 
 1. Every `Node.id` must equal its key in `Graph.nodes`.
 2. Every `Port.id` must equal its key in the parent `Ports` map on a `NodeDefinition`.
-3. Every edge endpoint `from.node` / `to.node` must **resolve** for the graph to be executable / fully typed. Today resolution is membership in `Graph.nodes`; unresolved ids are validation errors (not a serialization prohibition). Edges may still be stored without a matching local node entry.
+3. Every edge endpoint `from.node` / `to.node` must **resolve** through the graph source's node provider for the graph to be executable / fully typed — see [graph-sources.md](./graph-sources.md). Unresolved ids are validation errors (not a serialization prohibition). Edges may still be stored without a matching local node entry.
 4. For every edge whose endpoints resolve and whose types are known via a registry, `from.port` must exist in that node's `NodeDefinition.outputs`, and `to.port` must exist in that node's `NodeDefinition.inputs`.
 5. `Node.inputs` keys must be valid input `PortId`s for the node's `NodeDefinition` (when type is known).
 6. Required singleton input ports (no `defaultValue`, no incoming edge, no local literal) are ill-formed when validated. Required variadic inputs need ≥1 inbound edge.
@@ -211,7 +211,7 @@ These are design requirements for validators and converters:
 - **`SignalType`** names the Imp type of a signal on a port; the concrete / variable union supports opaque generics (`collection<T>`) without a separate type-expression AST.
 - **Record/map keyed by id** makes merge, lookup, and partial update straightforward for transmission and UI state.
 - **Separate `EdgeId`** allows multiple edges and stable identity without encoding topology into the id; **`Edge.order`** sequences variadic fan-in independently of id.
-- **Edges vs local nodes** — topology lives in `Graph.edges`; `Graph.nodes` holds local instance data. Decoupling them allows incomplete or decentralized graphs to carry wires whose endpoints are resolved later or elsewhere.
+- **Edges vs local nodes** — topology lives in `Graph.edges`; `Graph.nodes` holds local instance data. Decoupling them allows incomplete or decentralized graphs to carry wires whose endpoints are resolved later or elsewhere, through node providers — see [graph-sources.md](./graph-sources.md).
 - **Boundary `input` / `output` / `parameter` / `pack` nodes** — `input`/`output` are one instance per host port; `parameter` declares host-configurable defaults; `pack` turns ordered element wires into `list<T>`.
 - **Catalog vs instance** — `NodeDefinition` holds port templates (and optional `body`); `Node` holds identity, type id, and local input values (`Node.type` ↔ `NodeDefinition.id`). See [node-libraries.md](./node-libraries.md).
 
@@ -225,6 +225,7 @@ None.
 
 ## See also
 
+- [graph-sources.md](./graph-sources.md) — edge / node providers that algorithms read graphs through
 - [node-libraries.md](./node-libraries.md) — `NodeDefinition` / `NodeLibrary` catalogs
 - [graph-libraries.md](./graph-libraries.md) — JSON graph library format
 - [resolve.md](../imp-graph-resolve/resolve.md) — late nested graph resolution

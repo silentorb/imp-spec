@@ -23,7 +23,9 @@
 
 ### flattenGraph
 
-`flattenGraph(graph, registry) → Graph`
+`flattenGraph(source, registry) → Graph`
+
+`source` is a [graph source](../imp-core-types/graph-sources.md). Expansion starts from `materializeGraph(source)`; the result is a serialized `Graph`.
 
 Recursively expands graph-backed node instances into a single flat graph suitable for existing per-operator translation:
 
@@ -42,7 +44,9 @@ Definition-reference cycles (A's body references B, B's body references A) are d
 
 ### buildExecutionProgram
 
-`buildExecutionProgram(graph, registry) → ExecutionProgram`
+`buildExecutionProgram(source, registry) → ExecutionProgram`
+
+`root` is `materializeGraph(source)` (see [graph-sources.md](../imp-core-types/graph-sources.md)).
 
 Preferred path for **runtime consumers** — avoids duplicating shared subgraph bodies:
 
@@ -91,12 +95,12 @@ Inner literal values on composite instance `C.inputs` map to inner boundary `inp
 
 ### Imp Translators
 
-1. `flattenGraph(graph, registry)`
+1. `flattenGraph(source, registry)`
 2. Translate the flat graph to the target format (e.g. SQL)
 
 ### Runtime consumers
 
-1. `buildExecutionProgram(graph, registry)`
+1. `buildExecutionProgram(source, registry)`
 2. Execute composite nodes via `subgraphs` lookup
 
 ## Configuration

@@ -7,6 +7,7 @@ Each file under [`../packages/`](../packages/) is the **authoritative design spe
 | Package | Spec |
 | --- | --- |
 | Core graph model | [graph-model.md](../packages/imp-core-types/graph-model.md) |
+| Graph sources (edge / node providers) | [graph-sources.md](../packages/imp-core-types/graph-sources.md) |
 | Node libraries (`NodeDefinition` / `NodeLibrary`) | [node-libraries.md](../packages/imp-core-types/node-libraries.md) |
 | JSON graph libraries | [graph-libraries.md](../packages/imp-core-types/graph-libraries.md) |
 | Type constraints | [type-constraints.md](../packages/imp-core-types/type-constraints.md) |
