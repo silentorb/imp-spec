@@ -60,6 +60,18 @@ Rules:
 
 Wired **edges** use assignability (directional). Other checks that still need equality of two types (e.g. some boundary contracts) may continue to use `unify` directly.
 
+#### Edges into `any`
+
+`any` as an edge **target** accepts every source, but it is the **weakest** constraint during inference: an edge into an `any`-typed port must not decide a type variable that another edge could decide.
+
+- Inference (the fixed point under Overload resolution and resolvePortType) first stabilizes using every edge whose target port type is not `any`.
+- Only then are `any`-target edges applied; a source type variable still unbound at that point binds to `any` (as before). If that changes the substitution, the fixed point runs again.
+- The result is independent of edge iteration order. Example: `mix<A>(a: A, b: A) → A` fed `audio_mono` and `audio_stereo` reports the conflict even when `mix`'s output also feeds an `any` port.
+
+#### Type-parameter conflicts
+
+When an edge fails because its target port's type parameter is already bound through another inbound edge of the same node, the error names the parameter, both types and both ports — e.g. `type parameter A is audio_mono (from input a) but input b receives audio_stereo` — rather than reporting only the later edge as an assignment failure.
+
 ### Overload resolution
 
 A `NodeTypeId` may map to an **overload set**: an ordered list of `NodeDefinition` signatures that share the same `id` (the graph `Node.type` symbol). See [node-libraries.md](../imp-core-types/node-libraries.md) and [registry.md](../imp-registry/registry.md).
@@ -83,6 +95,8 @@ Overload resolution participates in the same **fixed-point** as substitution acc
 Given a `NodeDefinition` with `typeParams` and a list of concrete `typeArgs` (same length, same order), return a new definition-shaped port template object with all `{ param }` references in port types and `body` replaced by the corresponding concrete args. **Must throw** on arity mismatch or non-concrete args.
 
 Also applies to renaming/substituting into embedded `body` graphs during resolution.
+
+Every other `Port` field (`id`, `defaultValue`, **`variadic`**) is preserved; only the port type is substituted.
 
 ### resolvePortType
 
@@ -128,6 +142,19 @@ Validate a single graph-backed `NodeDefinition`:
    - **Non-variadic** inputs/outputs: unify boundary `value` type with the declared port type
    - **Variadic** inputs: boundary `value` type must be **`list<T>`** where `T` is the declared element `Port.type` (unify / assignability against `listOf(declared.type)`)
 5. No unbound boundary nodes beyond those listed in bindings (surplus boundary nodes → error)
+
+#### Generic graph-backed definitions
+
+A graph-backed definition may declare `typeParams` (with `bounds`) and use them in its declared port types, e.g. `echo<A: Audio>(audio: A) → A`. Its body is checked **once, for every instantiation**, by treating each parameter as **rigid**:
+
+1. Each `TypeParam` becomes a rigid type. It unifies only with itself, with type variables (which bind to it) and with `any`. No concrete type is assignable to it, and it is assignable to no concrete type.
+2. A rigid type **satisfies a bound** `C` when its own `bounds` include `C`, or when every member of one of its bound constraints satisfies `C`.
+3. Bound boundary nodes without `typeArgs` whose declared port type mentions a type parameter take the declared type (rigid; `list<…>` for variadic inputs) as their `typeArgs` for the body check. Boundary nodes may also state `typeArgs` that reference the enclosing definition's parameters (`{ "param": "A" }`); these are the only `{ param }` references allowed in body `typeArgs`.
+4. The body is then checked with `checkGraph` as usual. Rigid types are not variables, so "Unresolved params" does not fire for them.
+
+Rigid types are a checking device. Implementations may represent them as they like, but they never appear in serialized graphs or in use-site type args, and errors print the parameter id (e.g. `A`).
+
+Use sites type-check against the declared ports like any other polymorphic node (inference from edges, or explicit `Node.typeArgs`). See [resolve.md](../imp-graph-resolve/resolve.md) for how bodies are inlined.
 
 ### checkGraphDefinitions
 

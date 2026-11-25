@@ -33,7 +33,7 @@ Recursively expands graph-backed node instances into a single flat graph suitabl
 2. Topologically expand composites (instance-level cycle → error)
 3. For each composite instance:
    - Load `NodeDefinition.body`
-   - Apply `instantiateNodeDefinition` with instance `typeArgs`
+   - Apply `instantiateNodeDefinition` with instance `typeArgs`. For a [generic definition](../imp-typecheck/type-system.md#generic-graph-backed-definitions) instance **without** `typeArgs`, inlined body nodes drop any `typeArgs` that reference the definition's parameters (and an inserted `pack` takes no `typeArgs`), so those types are inferred from edges in the flattened graph
    - Rename inner node/edge ids with prefix `${instanceId}::`
    - Rewire: parent inbound edges → bound input boundary ports; parent outbound edges ← bound output boundary ports
    - **Variadic inputs:** do **not** splice N element wires onto a singleton `list` consumer. Collect parent edges targeting the variadic port (sorted by `Edge.order`), insert a core **`pack`** node (`typeArgs` = `[T]` for element type `T`), wire those sources into `pack.items` (preserving `order`), then single-edge rewire `pack.list` → former consumers of the bound boundary `input.value`. Remove the boundary `input` node as usual.
