@@ -2,7 +2,7 @@
 
 ## Summary
 
-**`imp-typecheck`** provides **static** signal-type checking for Imp graphs: opaque type-parameter unification, nominal subtyping, edge assignability, **per-symbol overload resolution**, graph-backed definition validation, and definition-reference cycle detection. No runtime type tags on execution rows.
+**`imp-typecheck`** provides **static** type checking for Imp graphs: opaque type-parameter unification, nominal subtyping, edge assignability, **per-symbol overload resolution**, graph-backed definition validation, and definition-reference cycle detection. No runtime type tags on execution rows.
 
 ## When to read this
 
@@ -13,11 +13,11 @@
 
 ### Substitution
 
-A **substitution** maps `TypeParamId` → concrete `SignalType` (concrete variant only). Substitutions are extended during unification.
+A **substitution** maps `TypeParamId` → concrete `Type` (concrete variant only). Substitutions are extended during unification.
 
 ### Unification rules
 
-`unify(a, b, subst)` attempts to make two `SignalType` values equal under `subst`:
+`unify(a, b, subst)` attempts to make two `Type` values equal under `subst`:
 
 | Case | Rule |
 | --- | --- |
@@ -32,7 +32,7 @@ Type variables must not appear in substitution values as variables — only conc
 
 ### Subtyping
 
-Imp has a **fixed core subtype relation** on concrete signal type ids (not a host-extensible catalog in this revision):
+Imp has a **fixed core subtype relation** on concrete type ids (not a host-extensible catalog in this revision):
 
 | Subtype | Supertype |
 | --- | --- |
@@ -100,7 +100,7 @@ Every other `Port` field (`id`, `defaultValue`, **`variadic`**) is preserved; on
 
 ### resolvePortType
 
-For a node instance in a graph, resolve the effective `SignalType` of a port:
+For a node instance in a graph, resolve the effective `Type` of a port:
 
 1. Load the **selected** catalog `NodeDefinition` for the node (sole overload, or the overload chosen by overload resolution).
 2. If `Node.typeArgs` present, instantiate port templates first.

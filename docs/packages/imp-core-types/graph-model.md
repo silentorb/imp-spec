@@ -22,7 +22,7 @@ All of the following are **strings**:
 | `EdgeId` | Key for an edge in `Graph.edges` |
 | `NodeTypeId` | Discriminator / type name for a node (function definition id); identity of a catalog `NodeType` — see [node-libraries.md](./node-libraries.md) |
 | `PortId` | Key for an input or output port on a node |
-| `SignalTypeId` | Identity of an Imp concrete signal type |
+| `TypeId` | Identity of an Imp concrete type |
 | `TypeParamId` | Identity of a type parameter declared on a `NodeDefinition` |
 | `TypeConstraintId` | Identity of a named nominal type constraint in a `TypeConstraintLibrary` |
 
@@ -37,21 +37,25 @@ Declares an **opaque** type parameter (e.g. `T`) on a polymorphic catalog entry.
 
 Optional `bounds` reference named constraints from a `TypeConstraintLibrary` — see [type-constraints.md](./type-constraints.md). Omitted = unconstrained.
 
-### SignalType
+### Type
 
-`SignalType` is a **tagged union** of two variants, JSON-discriminated by field presence:
+An Imp **type**. Types are not specific to signals: ports use them to describe the signals they carry, but the type system stands on its own and may be used by other parts of Imp.
+
+Implementations must expose `Type` (and the other generically named type-system symbols such as `TypeId`, `ConcreteType`, `TypeVar`) **only inside an Imp-specific namespace** (package, module, or crate) — never as a global or ambient symbol — so consumers can tell them apart from third-party `Type` symbols.
+
+`Type` is a **tagged union** of two variants, JSON-discriminated by field presence:
 
 | Variant | Fields | Example |
 | --- | --- | --- |
-| **Concrete** | `id` (`SignalTypeId`), optional `args` (`SignalType[]`) | `{ "id": "collection", "args": [{ "param": "T" }] }` |
+| **Concrete** | `id` (`TypeId`), optional `args` (`Type[]`) | `{ "id": "collection", "args": [{ "param": "T" }] }` |
 | **Variable** | `param` (`TypeParamId`) | `{ "param": "T" }` |
 
 Rules:
 
 - **`args`** is only valid on the concrete variant (e.g. `collection<T>`, `list<T>`, `set<T>`).
-- A concrete type with **no** `args` is a nullary signal type (e.g. `{ "id": "boolean" }`).
+- A concrete type with **no** `args` is a nullary type (e.g. `{ "id": "boolean" }`).
 - Bare `{ "id": "collection" }`, `{ "id": "list" }`, or `{ "id": "set" }` without `args` is **not** a well-formed container type after library migration — use `collection<any>` / `list<any>` / `set<any>` or a type parameter.
-- **`any`** is a concrete top type; static checking treats it as compatible with any other signal type.
+- **`any`** is a concrete top type; static checking treats it as compatible with any other type.
 - Some concrete ids participate in a **fixed subtype relation** (e.g. `list` <: `collection`, `set` <: `collection`) enforced by `imp-typecheck` — see [type-system.md](../imp-typecheck/type-system.md).
 - Structural/record types and type aliases are out of scope for this revision — see [type-system.md](../imp-typecheck/type-system.md). Nominal type constraints on `TypeParam.bounds` are specified in [type-constraints.md](./type-constraints.md).
 
@@ -73,11 +77,11 @@ Union: `string | number | boolean | null`.
 | Field | Type | Required |
 | --- | --- | --- |
 | `id` | `PortId` | must |
-| `type` | `SignalType` | must |
+| `type` | `Type` | must |
 | `defaultValue` | `PrimitiveValue` | may |
 | `variadic` | `boolean` | may |
 
-One port template: identity, signal type, optional default, and optional variadic multiplicity. Used on **catalog** `NodeDefinition.inputs` / `NodeDefinition.outputs` — not on graph node instances.
+One port template: identity, type, optional default, and optional variadic multiplicity. Used on **catalog** `NodeDefinition.inputs` / `NodeDefinition.outputs` — not on graph node instances.
 
 - **`defaultValue` unset** — input port is **required** (must resolve via an incoming edge or a local instance literal).
 - **`defaultValue` set** — input port is **optional**; falls back to that value when unwired and no local literal is present.
@@ -115,15 +119,15 @@ Only keys that are valid input ports on the node's `NodeDefinition` should appea
 | `id` | `NodeId` | must |
 | `title` | `string` | may |
 | `type` | `NodeTypeId` | must |
-| `typeArgs` | `SignalType[]` | may |
+| `typeArgs` | `Type[]` | may |
 | `inputs` | `InputValues` | must (may be empty) |
 
-A **node instance**: identity, optional display label, type reference, and local literal input values. Port templates (signal types, defaults, output ports) live on the catalog `NodeDefinition` — see [node-libraries.md](./node-libraries.md).
+A **node instance**: identity, optional display label, type reference, and local literal input values. Port templates (types, defaults, output ports) live on the catalog `NodeDefinition` — see [node-libraries.md](./node-libraries.md).
 
 - **`id`** is the stable identity (map key and edge/`PortReference` target). Hosts may use opaque ids (e.g. ULIDs); format is not enforced.
 - **`title`** is an optional human-facing label. Editors display `title` when present, otherwise `id`. Omit `title` when the graph has no human-facing labeling need (machine-only graphs, structural fixtures). Titles are not unique and are not used as edge endpoints.
 
-When the catalog `NodeDefinition` declares `typeParams`, `typeArgs` supplies **concrete** `SignalType` values for those parameters in declaration order. Omit `typeArgs` when edge wiring provides enough constraints for the checker to infer them; required when a polymorphic node has no inferrable inputs (e.g. a standalone boundary `input` node).
+When the catalog `NodeDefinition` declares `typeParams`, `typeArgs` supplies **concrete** `Type` values for those parameters in declaration order. Omit `typeArgs` when edge wiring provides enough constraints for the checker to infer them; required when a polymorphic node has no inferrable inputs (e.g. a standalone boundary `input` node).
 
 Graph-backed definitions appear as ordinary node instances: `Node.type` references the definition id; the internal `body` graph is resolved late — see [resolve.md](../imp-graph-resolve/resolve.md).
 
@@ -208,7 +212,7 @@ These are design requirements for validators and converters:
 - **Instance literals on the node** — initial values must live somewhere; storing them on the instance (not a side map) matches common dataflow tooling and lets an edge override without discarding the local fallback.
 - **`defaultValue` on port templates** — required vs optional is expressed by omitting or setting a default on the catalog `Port`.
 - **`variadic` on input ports** — N-ary fan-in without inventing positional call syntax; element type stays on `Port.type`, ordered by `Edge.order`.
-- **`SignalType`** names the Imp type of a signal on a port; the concrete / variable union supports opaque generics (`collection<T>`) without a separate type-expression AST.
+- **`Type`** is a general Imp type, not tied to signals (a port uses one to describe its signal); the concrete / variable union supports opaque generics (`collection<T>`) without a separate type-expression AST.
 - **Record/map keyed by id** makes merge, lookup, and partial update straightforward for transmission and UI state.
 - **Separate `EdgeId`** allows multiple edges and stable identity without encoding topology into the id; **`Edge.order`** sequences variadic fan-in independently of id.
 - **Edges vs local nodes** — topology lives in `Graph.edges`; `Graph.nodes` holds local instance data. Decoupling them allows incomplete or decentralized graphs to carry wires whose endpoints are resolved later or elsewhere, through node providers — see [graph-sources.md](./graph-sources.md).

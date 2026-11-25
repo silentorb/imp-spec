@@ -22,7 +22,7 @@ A **`NodeLibrary`** of GQL-like graph path operators (`traverse`, …) over a ho
 
 Use **full words** for `NodeTypeId`s unless the abbreviation is a widely understood term (`traverse` is fine).
 
-### Signal type ids (v1)
+### Type ids (v1)
 
 | Id | Role |
 | --- | --- |
@@ -32,7 +32,7 @@ Use **full words** for `NodeTypeId`s unless the abbreviation is a widely underst
 | `string` | Association ids and other string literals |
 | `number` | Direction and other numeric literals |
 
-Reuse the same signal ids as [collection-transforms.md](../imp-collection-transforms/collection-transforms.md) so path results compose with `filter` / `sort` / `project`. `traverse` declares `typeParams: [{ id: "T" }]` and uses `collection<T>` on collection input and output ports. Its distinct-by-`id` emission is closer to `set` than to `list`; **this revision keeps `traverse` on `collection`** (set-shaped result / list·set overloads are follow-up). Note that `filter` / `project` / etc. no longer accept bare `collection` — authors should bound path pipelines with concrete `list` or `set` where those transforms are used, or await traverse overloads.
+Reuse the same type ids as [collection-transforms.md](../imp-collection-transforms/collection-transforms.md) so path results compose with `filter` / `sort` / `project`. `traverse` declares `typeParams: [{ id: "T" }]` and uses `collection<T>` on collection input and output ports. Its distinct-by-`id` emission is closer to `set` than to `list`; **this revision keeps `traverse` on `collection`** (set-shaped result / list·set overloads are follow-up). Note that `filter` / `project` / etc. no longer accept bare `collection` — authors should bound path pipelines with concrete `list` or `set` where those transforms are used, or await traverse overloads.
 
 ### No table source node
 

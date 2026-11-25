@@ -16,7 +16,7 @@ Use **Imp Translator** for packages that translate Imp graphs to other formats (
 | --- | --- | --- |
 | `imp-core-types` | Core graph + library interfaces; core boundary `NodeLibrary` | [graph-model](./docs/packages/imp-core-types/graph-model.md), [graph-sources](./docs/packages/imp-core-types/graph-sources.md), [node-libraries](./docs/packages/imp-core-types/node-libraries.md), [graph-libraries](./docs/packages/imp-core-types/graph-libraries.md), [type-constraints](./docs/packages/imp-core-types/type-constraints.md) |
 | `imp-registry` | Load `NodeLibrary` / `GraphLibrary` / `TypeConstraintLibrary` values and look up definitions | [registry](./docs/packages/imp-registry/registry.md) |
-| `imp-typecheck` | Static signal-type checking for graphs | [type-system](./docs/packages/imp-typecheck/type-system.md) |
+| `imp-typecheck` | Static type checking for graphs | [type-system](./docs/packages/imp-typecheck/type-system.md) |
 | `imp-graph-library` | Parse and validate graph library JSON | [graph-libraries](./docs/packages/imp-core-types/graph-libraries.md) |
 | `imp-graph-resolve` | Late nested graph resolution (flatten / execution program) | [resolve](./docs/packages/imp-graph-resolve/resolve.md) |
 | `imp-collection-transforms` | Collection combinator `NodeLibrary` | [collection-transforms](./docs/packages/imp-collection-transforms/collection-transforms.md) |

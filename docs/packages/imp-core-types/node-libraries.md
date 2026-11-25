@@ -19,7 +19,7 @@ Declarative **catalogs of node definitions** that library packages can ship with
 | `id` | `TypeParamId` | must |
 | `bounds` | `TypeConstraintId[]` | may |
 
-Opaque type parameter declared on a polymorphic catalog entry. See [graph-model.md](./graph-model.md) for `SignalType` variable references and [type-constraints.md](./type-constraints.md) for `bounds`.
+Opaque type parameter declared on a polymorphic catalog entry. See [graph-model.md](./graph-model.md) for `Type` variable references and [type-constraints.md](./type-constraints.md) for `bounds`.
 
 ### NodeDefinition
 
@@ -43,7 +43,7 @@ Two kinds (discriminated by fields, not a separate enum):
 | **Primitive** | `inputs`, `outputs`; `implementation` optional (defaults to universal) | `body`, `bindings` |
 | **Graph-backed** | `inputs`, `outputs`, `body`, `bindings` | `implementation` |
 
-- `NodeDefinition.typeParams` declares opaque parameters (e.g. `T`) referenced in port `SignalType` templates via `{ "param": "T" }`.
+- `NodeDefinition.typeParams` declares opaque parameters (e.g. `T`) referenced in port `Type` templates via `{ "param": "T" }`.
 - Params are **scoped to the definition**; the checker unifies them across that definition's ports and with wired edges.
 - Graph **`Node.inputs`** are **local literal values** (`InputValues`), not `Ports` — see [graph-model.md](./graph-model.md).
 - **`defaultValue` on an input `Port`** makes that port optional; omitting it means the port is required.
@@ -87,7 +87,7 @@ Tagged union:
 
 | Field | Type | Required |
 | --- | --- | --- |
-| `match` | concrete `SignalType` | must |
+| `match` | concrete `Type` | must |
 | `implementation` | `ImplementationId` | must |
 
 `match` is a **pattern**: `{ "id": "any" }` matches any concrete type; otherwise `id` and `args` must match structurally.

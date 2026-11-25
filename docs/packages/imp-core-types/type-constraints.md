@@ -2,7 +2,7 @@
 
 ## Summary
 
-Declarative **catalogs of nominal type constraints** (`TypeConstraint`) that list which concrete `SignalType` patterns satisfy a named bound. Polymorphic `NodeType` and `GraphType` entries reference constraint ids on `TypeParam.bounds`; `imp-typecheck` enforces them after type-arg inference.
+Declarative **catalogs of nominal type constraints** (`TypeConstraint`) that list which concrete `Type` patterns satisfy a named bound. Polymorphic `NodeType` and `GraphType` entries reference constraint ids on `TypeParam.bounds`; `imp-typecheck` enforces them after type-arg inference.
 
 ## When to read this
 
@@ -21,13 +21,13 @@ String identity of a named nominal constraint (e.g. `Scalar`). Distinct namespac
 | Field | Type | Required |
 | --- | --- | --- |
 | `id` | `TypeConstraintId` | must |
-| `members` | `SignalType[]` | must (may be empty) |
+| `members` | `Type[]` | must (may be empty) |
 
 A **catalog entry** listing concrete type patterns that satisfy the constraint.
 
 - Each `members[]` entry is a **concrete pattern** (nominal `id` + optional `args`), using the same pattern language as implementation dispatch `cases[].match` — see [node-libraries.md](./node-libraries.md).
 - `{ "id": "any" }` in a member pattern matches any concrete type when checked (wildcard).
-- Membership uses **`signal_type_matches`**: nominal pattern match on resolved concrete type args, including the fixed core subtype relation (a subtype satisfies a supertype pattern; e.g. `list<string>` matches a `collection<string>` member). Not structural record typing. See [type-system.md](../imp-typecheck/type-system.md).
+- Membership uses **`type_matches`**: nominal pattern match on resolved concrete type args, including the fixed core subtype relation (a subtype satisfies a supertype pattern; e.g. `list<string>` matches a `collection<string>` member). Not structural record typing. See [type-system.md](../imp-typecheck/type-system.md).
 
 A constraint's `id` must equal its key in the parent `TypeConstraintLibrary.constraints` map when the library is well-formed.
 
@@ -53,7 +53,7 @@ A named, declarative collection of `TypeConstraint`s. Libraries **must not** req
 Given a resolved **concrete** type argument and a `TypeConstraintId`:
 
 1. Load `TypeConstraint` from registry.
-2. The type arg satisfies the constraint when it **`signal_type_matches`** at least one `members[]` pattern (same rules as dispatch case matching).
+2. The type arg satisfies the constraint when it **`type_matches`** at least one `members[]` pattern (same rules as dispatch case matching).
 3. `{ "id": "any" }` as the resolved type arg satisfies **all** bounds (consistent with unify top-type rules).
 
 ### Relationship to other catalogs

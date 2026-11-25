@@ -22,7 +22,7 @@ A **`NodeLibrary`** of common functional collection combinators (`filter`, `sort
 
 Use **full words** for `NodeTypeId`s unless the abbreviation is a widely understood term (`filter`, `sort`, `limit` are fine; use `equals` / `not_equals` / `less_than` / `greater_than`, not `eq` / `neq` / `lt` / `gt`).
 
-### Signal type ids (v1)
+### Type ids (v1)
 
 | Id | Role |
 | --- | --- |
@@ -32,7 +32,7 @@ Use **full words** for `NodeTypeId`s unless the abbreviation is a widely underst
 | `boolean` | Predicate results |
 | `string` | Column names, sort direction, projected column lists |
 | `number` | Limits, offsets, numeric literals |
-| `any` | Top-type scalar / literal payload; unifies with any signal type in static checking |
+| `any` | Top-type scalar / literal payload; unifies with any type in static checking |
 
 ### Overloads (kind-specific)
 
@@ -61,7 +61,7 @@ There is **no** `from` / table-source node. The incoming collection arrives via 
 | `group` | `list` only | `collection` (`list<T>`), `column` (`string`), `direction` (`string`, default `"asc"`) | `collection` (`list<T>`) | `group` | Partition rows by `column`; `direction` is `"asc"` or `"desc"`. Rows stay flat; hosts use group order for bands/sections. Translators may emit `ORDER BY` on the group column; partition and enum-weight sort happen after execute. |
 | `search` | `list`, `set` | `collection` (kind), `query` (`string`) | `collection` (same kind) | `search_list`, `search_set` | Declarative text retrieval. Imp defines intent only — ranking, field coverage, fuzzy matching, case rules, empty-query behavior, and preview metadata are **host-defined**. Generic SQL translation does **not** translate `search`; hosts intercept at compile or execute. |
 
-Port **names** such as `collection` on transforms are unchanged; **signal types** carry the concrete kind.
+Port **names** such as `collection` on transforms are unchanged; **types** carry the concrete kind.
 
 `except` is **declarative** only. Imp Translators must resolve it lazily (e.g. SQL anti-membership over a subquery). They must **not** materialize `exclude` into an in-memory id set and subtract.
 
