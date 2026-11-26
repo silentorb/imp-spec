@@ -110,6 +110,6 @@ None.
 ## See also
 
 - [node-libraries.md](../imp-core-types/node-libraries.md)
-- [graph-libraries.md](../imp-core-types/graph-libraries.md)
+- [imp-files.md](../imp-file/imp-files.md)
 - [type-system.md](../imp-typecheck/type-system.md)
 - Root [AGENTS.md](../../AGENTS.md)

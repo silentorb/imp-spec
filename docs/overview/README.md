@@ -9,9 +9,9 @@ Each file under [`../packages/`](../packages/) is the **authoritative design spe
 | Core graph model | [graph-model.md](../packages/imp-core-types/graph-model.md) |
 | Graph sources (edge / node providers) | [graph-sources.md](../packages/imp-core-types/graph-sources.md) |
 | Node libraries (`NodeDefinition` / `NodeLibrary`) | [node-libraries.md](../packages/imp-core-types/node-libraries.md) |
-| JSON graph libraries | [graph-libraries.md](../packages/imp-core-types/graph-libraries.md) |
-| Type constraints | [type-constraints.md](../packages/imp-core-types/type-constraints.md) |
-| Registry (load / lookup type libraries) | [registry.md](../packages/imp-registry/registry.md) |
+| Type definitions and union types | [type-definitions.md](../packages/imp-core-types/type-definitions.md) |
+| Imp files (JSON transmission / storage) | [imp-files.md](../packages/imp-file/imp-files.md) |
+| Registry (load / lookup node and type definitions) | [registry.md](../packages/imp-registry/registry.md) |
 | Static type checking | [type-system.md](../packages/imp-typecheck/type-system.md) |
 | Late nested graph resolution | [resolve.md](../packages/imp-graph-resolve/resolve.md) |
 | Collection transforms | [collection-transforms.md](../packages/imp-collection-transforms/collection-transforms.md) |

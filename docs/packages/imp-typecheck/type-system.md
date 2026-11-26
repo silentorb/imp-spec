@@ -2,18 +2,36 @@
 
 ## Summary
 
-**`imp-typecheck`** provides **static** type checking for Imp graphs: opaque type-parameter unification, nominal subtyping, edge assignability, **per-symbol overload resolution**, graph-backed definition validation, and definition-reference cycle detection. No runtime type tags on execution rows.
+**`imp-typecheck`** provides **static** type checking for Imp graphs: type-definition expansion, union types, opaque type-parameter unification, nominal subtyping, edge assignability, **per-symbol overload resolution**, graph-backed definition validation, and definition-reference cycle detection. No runtime type tags on execution rows.
 
 ## When to read this
 
 - Implementing or changing type checking in language implementations
 - Understanding how polymorphic `NodeDefinition`s are validated
+- Understanding how union types and [type definitions](../imp-core-types/type-definitions.md) are checked
 
 ## Requirements
 
+### Normalization
+
+Every type read from the registry or a graph (port templates, `Node.typeArgs`, bounds, dispatch patterns) is **normalized** before any rule below applies. `normalizeType(type, registry)`:
+
+1. **Variable** — unchanged.
+2. **Concrete whose `id` names a registered `TypeDefinition`** — replace it by the definition's `type` with each `{ param }` of the definition substituted by the matching argument, then normalize the result.
+3. **Other concrete** — normalize each argument.
+4. **Union** — normalize each member, then:
+   - flatten members that are themselves unions;
+   - if any member is `any`, the result is `any`;
+   - drop duplicate members (structural equality), keeping the first occurrence;
+   - a union left with one member becomes that member.
+
+Normalization terminates because valid definition sets are non-recursive (see [checkTypeDefinitions](#checktypedefinitions)). An argument-count mismatch on a defined name, or a reference to an undefined param, is an error.
+
+Normalized types never contain defined names, nested unions or one-member unions. The rules below assume normalized inputs.
+
 ### Substitution
 
-A **substitution** maps `TypeParamId` → concrete `Type` (concrete variant only). Substitutions are extended during unification.
+A **substitution** maps `TypeParamId` → `Type` (concrete or union, normalized). Substitutions are extended during unification.
 
 ### Unification rules
 
@@ -25,8 +43,10 @@ A **substitution** maps `TypeParamId` → concrete `Type` (concrete variant only
 | Both concrete, same `id`, same `args` length | Recursively unify each arg pair |
 | Both concrete, same `id`, different `args` length | **Error** |
 | Both concrete, different `id` | **Error** |
-| One variable `{ param: T }`, one concrete | Bind `subst[T] = concrete` if `T` unbound; else unify `subst[T]` with concrete |
+| One variable `{ param: T }`, one concrete or union | Bind `subst[T] = other` if `T` unbound; else unify `subst[T]` with the other |
 | Both variables | Bind one to the other (pick canonical param id) |
+| Both unions | Succeed when each side is **assignable** to the other (member order does not matter), threading `subst` |
+| One union, one concrete | **Error** (normalization already collapsed one-member unions) |
 
 Type variables must not appear in substitution values as variables — only concrete types.
 
@@ -52,21 +72,29 @@ Rules:
 
 ### Assignability
 
-`assignable(source, target, subst)` succeeds when a value of type `source` may flow into a port of type `target`:
+`assignable(source, target, subst)` succeeds when a value of type `source` may flow into a port of type `target`. Apply `subst` to both sides, then take the first rule that applies:
 
-1. Attempt `unify(source, target, subst)` (covers `any`, type variables, and same concrete id with invariant args).
-2. If unify fails solely because both sides are concrete with **different ids**, succeed when `is_subtype_id(source.id, target.id)` **and** corresponding `args` unify pairwise (same arity; invariant).
-3. Otherwise **error** (including the reverse direction: `collection` is not assignable to `list` or `set`).
+1. **`any`** on either side — as `unify` (succeed; type variables on the other side bind to `any`).
+2. **Union source** `S₁ | … | Sₙ` — a type-variable target binds to the **whole** union; otherwise succeed when **every** member `Sᵢ` is assignable to `target`, threading `subst` member by member. A union-typed output cannot feed a port that accepts only some of its members.
+3. **Rigid source** (see [Generic graph-backed definitions](#generic-graph-backed-definitions)) — succeed when `target` is the same rigid type, a type variable (which binds to the rigid type, as in `unify`), or when one of the rigid parameter's own **bounds** is assignable to `target`. Otherwise **error**.
+4. **Variable source, union target** — an unbound source variable binds to the **whole** union (`T := A | B`).
+5. **Union target** `T₁ | … | Tₙ` (source not a union, variable or rigid) — try each member with a trial copy of `subst`:
+   - no member accepts `source` → **error**;
+   - every accepting member yields the **same** substitution → succeed with it (in particular, a fully resolved source just needs one accepting member);
+   - accepting members yield **different** substitutions → **error**: the source is ambiguous between members (e.g. `list<T>` into `list<string> | list<number>` with `T` unbound). Authors resolve it with explicit `typeArgs`.
+6. Attempt `unify(source, target, subst)` (covers type variables and same concrete id with invariant args).
+7. If unify fails solely because both sides are concrete with **different ids**, succeed when `is_subtype_id(source.id, target.id)` **and** corresponding `args` unify pairwise (same arity; invariant).
+8. Otherwise **error** (including the reverse direction: `collection` is not assignable to `list` or `set`).
 
 Wired **edges** use assignability (directional). Other checks that still need equality of two types (e.g. some boundary contracts) may continue to use `unify` directly.
 
-#### Edges into `any`
+#### Weak edges: into `any` or a union
 
-`any` as an edge **target** accepts every source, but it is the **weakest** constraint during inference: an edge into an `any`-typed port must not decide a type variable that another edge could decide.
+An edge **target** typed `any` or a union is a **weak** constraint during inference: it must not decide a type variable that another edge could decide more precisely.
 
-- Inference (the fixed point under Overload resolution and resolvePortType) first stabilizes using every edge whose target port type is not `any`.
-- Only then are `any`-target edges applied; a source type variable still unbound at that point binds to `any` (as before). If that changes the substitution, the fixed point runs again.
-- The result is independent of edge iteration order. Example: `mix<A>(a: A, b: A) → A` fed `audio_mono` and `audio_stereo` reports the conflict even when `mix`'s output also feeds an `any` port.
+- Inference (the fixed point under Overload resolution and resolvePortType) first stabilizes using every edge whose target port type is neither `any` nor a union.
+- Only then are weak edges applied. A source type variable still unbound at that point binds to `any` (for an `any` target) or to the whole union (for a union target). If that changes the substitution, the fixed point runs again.
+- The result is independent of edge iteration order. Example: `mix<A>(a: A, b: A) → A` fed `audio_mono` and `audio_stereo` reports the conflict even when `mix`'s output also feeds an `any` or `Audio` port.
 
 #### Type-parameter conflicts
 
@@ -125,7 +153,7 @@ Validate a [graph source](../imp-core-types/graph-sources.md) against a registry
 | Variadic `order` | Every edge targeting a variadic input must set `order`; `order` values must be **unique** among edges targeting the same `(node, port)` |
 | Type-param arity | When `Node.typeArgs` set, length must match the **selected** `NodeDefinition.typeParams` |
 | Unresolved params | After propagation, no free type variables remain on any wired port |
-| Type-param bounds | After inference, each resolved concrete type arg must satisfy every `TypeParam.bounds` entry |
+| Type-param bounds | After inference, each resolved type arg must be **assignable** to every `TypeParam.bounds` entry |
 
 Returns a list of structured errors (node id, port id, message). Empty list means success.
 
@@ -147,8 +175,8 @@ Validate a single graph-backed `NodeDefinition`:
 
 A graph-backed definition may declare `typeParams` (with `bounds`) and use them in its declared port types, e.g. `echo<A: Audio>(audio: A) → A`. Its body is checked **once, for every instantiation**, by treating each parameter as **rigid**:
 
-1. Each `TypeParam` becomes a rigid type. It unifies only with itself, with type variables (which bind to it) and with `any`. No concrete type is assignable to it, and it is assignable to no concrete type.
-2. A rigid type **satisfies a bound** `C` when its own `bounds` include `C`, or when every member of one of its bound constraints satisfies `C`.
+1. Each `TypeParam` becomes a rigid type carrying its declared `bounds`. It unifies only with itself, with type variables (which bind to it) and with `any`. No concrete or union type is assignable to it. It is assignable to another type only as described under [Assignability](#assignability) (rule 3): for example `A: Audio` may feed a port typed `Audio`, but not one typed `audio_mono`.
+2. A rigid type **satisfies a bound** `C` when it is assignable to `C`, i.e. when one of its own bounds is assignable to `C` (`A: Audio` satisfies `Audio`, and any bound that `Audio` is assignable to).
 3. Bound boundary nodes without `typeArgs` whose declared port type mentions a type parameter take the declared type (rigid; `list<…>` for variadic inputs) as their `typeArgs` for the body check. Boundary nodes may also state `typeArgs` that reference the enclosing definition's parameters (`{ "param": "A" }`); these are the only `{ param }` references allowed in body `typeArgs`.
 4. The body is then checked with `checkGraph` as usual. Rigid types are not variables, so "Unresolved params" does not fire for them.
 
@@ -160,18 +188,32 @@ Use sites type-check against the declared ports like any other polymorphic node 
 
 Validate all graph-backed entries in a registry:
 
-1. Run `checkDefinition` on each graph-backed definition
-2. Run `checkGraph` on each `body` (against registry including primitives)
-3. Detect **definition-reference cycles**: if definition A's body contains a node whose `type` resolves to graph-backed B, and B transitively references A → error
+1. Run `checkTypeDefinitions` on the registry's type definitions (reported first; normalization of later checks depends on them)
+2. Run `checkDefinition` on each graph-backed definition
+3. Run `checkGraph` on each `body` (against registry including primitives)
+4. Detect **definition-reference cycles**: if definition A's body contains a node whose `type` resolves to graph-backed B, and B transitively references A → error
 
 When listing graph-backed definitions for cycle detection, treat each overload signature that is graph-backed independently (same `id` may appear more than once only for primitive overloads in this revision; graph-backed overloads are allowed by the data model but uncommon).
+
+### checkTypeDefinitions
+
+Validate every registered `TypeDefinition` (see [type-definitions.md](../imp-core-types/type-definitions.md#validity)):
+
+| Check | Behavior |
+| --- | --- |
+| Params | Every `{ param }` inside `type` names one of the definition's own `params` |
+| Arity | Every reference to a defined name passes exactly as many `args` as that definition has `params` |
+| Empty unions | Every union has at least one member |
+| Cycles | No definition refers to itself, directly or through other definitions (including via `args` and union members) |
+
+Errors set `typeId` to the offending definition. Arity checks also apply to defined names used in port templates, `Node.typeArgs` and bounds; those are reported where the type is read.
 
 ### checkTypeParamBounds
 
 After edge unification and unresolved-variable checks inside `checkGraph`:
 
-1. For each graph node whose **selected** catalog `NodeDefinition` declares `typeParams`, resolve concrete type args via `resolveTypeArgs`.
-2. For each `TypeParam` with `bounds`, at the matching arg index, verify constraint membership.
+1. For each graph node whose **selected** catalog `NodeDefinition` declares `typeParams`, resolve type args via `resolveTypeArgs` (normalized).
+2. For each `TypeParam` with `bounds`, at the matching arg index, check that the arg is **assignable** to each normalized bound with an empty substitution. `any` satisfies every bound. A union arg satisfies a bound only when every member does.
 
 `checkGraph` **must** run this pass.
 
@@ -179,9 +221,11 @@ After edge unification and unresolved-variable checks inside `checkGraph`:
 
 For a node instance with selected `NodeDefinition.typeParams`:
 
-1. When `Node.typeArgs` is set, return those concrete types (after arity validation).
+1. When `Node.typeArgs` is set, return those types, normalized (after arity validation).
 2. Otherwise infer from edge unification: bind each declared param using scoped keys `nodeId::paramId`.
 3. Return `undefined` when any param remains unresolved.
+
+Resolved type args are always **normalized**: defined names are expanded, so hosts see `audio_mono | audio_stereo`, never `Audio`.
 
 ### resolveImplementation
 
@@ -189,11 +233,15 @@ Given a graph node and registry (primitive definitions only):
 
 1. Load the **selected** `NodeDefinition.implementation`, or default to `{ "kind": "universal", "id": "<NodeDefinition.id>" }`.
 2. **`universal`** — return `implementation.id` (kind-specific overloads typically use distinct ids such as `filter_list` / `filter_set`).
-3. **`dispatch`** — `resolveTypeArgs`, match `cases[].match`, return first hit, else `default`, else error.
+3. **`dispatch`** — `resolveTypeArgs`, then return the first case whose normalized `cases[].match` pattern the type arg is **assignable** to (`{ "id": "any" }` matches everything), else `default`, else error.
 
 `implementation.dispatch` remains a mechanism **behind one selected signature**. Per-kind polymorphism for authors is expressed as **overload sets**, not as a single `collection` signature with dispatch alone.
 
 Graph-backed definitions have no `implementation`; hosts resolve them via `imp-graph-resolve`.
+
+### Hosts and union types
+
+Imp values carry **no runtime type tags**. A host that lowers or executes a graph decides representations from **statically resolved, normalized** types (`resolveTypeArgs`, port templates passed through `normalizeType`). A port whose resolved type is still a **union** carries a value of one member without saying which, so a host that cannot handle every member at runtime **must reject** that port with a clear error rather than guess. Unions are most useful today as names for bounds (`A: Audio`), where each use site resolves to one member.
 
 ### Error shape
 
@@ -202,6 +250,7 @@ Graph-backed definitions have no `implementation`; hosts resolve them via `imp-g
 | `nodeId` | `NodeId` | may — absent for graph-level errors |
 | `portId` | `PortId` | may |
 | `definitionId` | `NodeTypeId` | may — for catalog-level errors |
+| `typeId` | `TypeId` | may — for type-definition errors |
 | `message` | `string` | must |
 
 ## Design rationale
@@ -212,11 +261,14 @@ Graph-backed definitions have no `implementation`; hosts resolve them via `imp-g
 - **Edge-driven inference** and **fixed-point overload selection** avoid requiring `typeArgs` on every polymorphic node and let sinks (e.g. `limit`) refine upstream overload choice.
 - **Strict bindings** replace loose boundary matching.
 - **Definition cycle detection** catches library authoring errors before runtime resolution.
+- **Transparent type definitions** add names without changing identity: comparing expansions keeps unification and subtyping unchanged.
+- **Unions replace type constraints.** Bounds, dispatch patterns and edges all use assignability, so a named union serves as a bound, a pattern and a port type with one rule.
+- **Weak union targets** mirror `any`: a union port accepts several types, so it should not be the edge that decides an inferred parameter.
 
 ## Behavior / pipeline
 
-1. Build registry from `NodeLibrary`, `GraphLibrary`, and `TypeConstraintLibrary` values.
-2. `checkGraphDefinitions(registry)` when loading graph libraries.
+1. Build registry from `NodeLibrary` values and [Imp files](../imp-file/imp-files.md) (node definitions and type definitions).
+2. `checkGraphDefinitions(registry)` after loading (type definitions first, then graph-backed definitions).
 3. `checkGraph(graph, registry)` before transmission-sensitive operations.
 
 ## Configuration
@@ -227,8 +279,8 @@ None.
 
 - [graph-model.md](../imp-core-types/graph-model.md)
 - [node-libraries.md](../imp-core-types/node-libraries.md)
-- [graph-libraries.md](../imp-core-types/graph-libraries.md)
-- [type-constraints.md](../imp-core-types/type-constraints.md)
+- [imp-files.md](../imp-file/imp-files.md)
+- [type-definitions.md](../imp-core-types/type-definitions.md)
 - [registry.md](../imp-registry/registry.md)
 - [resolve.md](../imp-graph-resolve/resolve.md)
 - Root [AGENTS.md](../../../AGENTS.md)

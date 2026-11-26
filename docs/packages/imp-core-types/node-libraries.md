@@ -17,9 +17,9 @@ Declarative **catalogs of node definitions** that library packages can ship with
 | Field | Type | Required |
 | --- | --- | --- |
 | `id` | `TypeParamId` | must |
-| `bounds` | `TypeConstraintId[]` | may |
+| `bounds` | `Type[]` | may |
 
-Opaque type parameter declared on a polymorphic catalog entry. See [graph-model.md](./graph-model.md) for `Type` variable references and [type-constraints.md](./type-constraints.md) for `bounds`.
+Opaque type parameter declared on a polymorphic catalog entry. See [graph-model.md](./graph-model.md) for `Type` variable references. Each bound is a type, typically a named union from a [type definition](./type-definitions.md) (e.g. `A: Audio`); a type argument satisfies the param when it is assignable to every bound — see [type-system.md](../imp-typecheck/type-system.md).
 
 ### NodeDefinition
 
@@ -87,14 +87,14 @@ Tagged union:
 
 | Field | Type | Required |
 | --- | --- | --- |
-| `match` | concrete `Type` | must |
+| `match` | `Type` | must |
 | `implementation` | `ImplementationId` | must |
 
-`match` is a **pattern**: `{ "id": "any" }` matches any concrete type; otherwise `id` and `args` must match structurally.
+`match` is a **pattern** type. A case matches when the resolved type argument is **assignable** to the normalized pattern: `{ "id": "any" }` matches every type, a union pattern (or a named one such as `Audio`) matches any of its members, and the fixed subtype relation applies (`list<string>` matches `collection<string>`). Patterns must not contain type variables.
 
 #### Dispatch resolution
 
-1. Resolve concrete type arguments for the node instance (from `Node.typeArgs` or edge inference) — see [type-system.md](../imp-typecheck/type-system.md).
+1. Resolve (normalized) type arguments for the node instance (from `Node.typeArgs` or edge inference) — see [type-system.md](../imp-typecheck/type-system.md).
 2. For `universal`, return `implementation.id`.
 3. For `dispatch`, read `typeArgs[paramIndex]` (default index `0`), return the first matching `cases[].implementation`, else `default`, else error.
 
@@ -104,8 +104,9 @@ Tagged union:
 | --- | --- | --- |
 | `id` | `string` | must |
 | `definitions` | `NodeDefinition[]` | must (may be empty) |
+| `types` | `TypeDefinition[]` | may |
 
-A named, declarative collection of `NodeDefinition`s. Libraries **must not** require `imp-registry`; they implement the core library interface alone.
+A named, declarative collection of `NodeDefinition`s, plus the [type definitions](./type-definitions.md) they rely on (e.g. a library that bounds its audio params by `Audio` ships `Audio` here). Libraries **must not** require `imp-registry`; they implement the core library interface alone.
 
 ### Overload sets
 
@@ -120,13 +121,13 @@ Rules:
 
 Port map key / `Port.id` equality matches [graph-model.md](./graph-model.md).
 
-Graph-backed definitions in JSON files use the same shape — see [graph-libraries.md](./graph-libraries.md).
+Graph-backed and primitive definitions in JSON travel in the `definitions` section of an [Imp file](../imp-file/imp-files.md), with the same shape.
 
 ### Naming convention
 
 Use **full words** for `NodeTypeId`s unless the abbreviation is a widely understood term on its own (e.g. `filter`, `sort`, `limit` are fine; prefer `equals` / `not_equals` over `eq` / `neq`).
 
-For library-authored graph-backed definitions, **ULIDs** are recommended for `id` to reduce cross-library collisions — see [graph-libraries.md](./graph-libraries.md).
+For library-authored graph-backed definitions, **ULIDs** are recommended for `id` to reduce cross-library collisions — see [imp-files.md](../imp-file/imp-files.md).
 
 ## Design rationale
 
@@ -150,8 +151,8 @@ None.
 ## See also
 
 - [graph-model.md](./graph-model.md)
-- [graph-libraries.md](./graph-libraries.md)
-- [type-constraints.md](./type-constraints.md)
+- [imp-files.md](../imp-file/imp-files.md)
+- [type-definitions.md](./type-definitions.md)
 - [registry.md](../imp-registry/registry.md)
 - [resolve.md](../imp-graph-resolve/resolve.md)
 - Root [AGENTS.md](../../../AGENTS.md)

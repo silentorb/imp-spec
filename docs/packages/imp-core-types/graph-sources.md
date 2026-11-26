@@ -59,7 +59,8 @@ A member id is **resolved** when `nodes.getNode(id)` returns a node, otherwise *
 
 | Name | Behavior |
 | --- | --- |
-| `graphSource(graph)` | Graph source over a serialized `Graph`: `getNode` / `nodeIds` read `Graph.nodes`; `getEdge` / `edgeEntries` read `Graph.edges` (key order) |
+| `graphSource(graph)` | Graph source over an in-memory `Graph`: `getNode` / `nodeIds` read `Graph.nodes`; `getEdge` / `edgeEntries` read `Graph.edges` (key order) |
+| `impFileGraphSource(file)` (in `imp-file`) | Graph source over an [Imp file](../imp-file/imp-files.md)'s `nodes` / `edges` arrays, in element order. Combine several files' node providers with `layeredNodes` |
 | `layeredNodes(...providers)` | `NodeProvider` that returns the first hit across `providers` in order. `nodeIds` is the de-duplicated union of providers that implement `nodeIds` (omitted when none do) |
 | `nodeMapProvider(nodes)` / `edgeMapProvider(edges)` | Providers over a bare `Graph.nodes` / `Graph.edges` map (building blocks for `graphSource` and layering) |
 | `graphNodeIds(source)` | Membership list (above) |

@@ -4,6 +4,8 @@
 
 Imp's core data model is a portable **directed graph** of nodes and port-to-port edges, intended as a universal transmission format for DAGs. This document is the language-agnostic source of truth for regenerating code type interfaces.
 
+`Graph` is the **in-memory** structure graph algorithms work on (through [graph sources](./graph-sources.md)). Imp content is serialized as an [Imp file](../imp-file/imp-files.md), whose `nodes` and `edges` are arrays of elements; a `Graph` is materialized from them when needed. Graph-backed definition `body` graphs keep the map form shown here.
+
 ## When to read this
 
 - Defining or changing `Graph`, `Node`, `Edge`, port, or id types
@@ -22,42 +24,44 @@ All of the following are **strings**:
 | `EdgeId` | Key for an edge in `Graph.edges` |
 | `NodeTypeId` | Discriminator / type name for a node (function definition id); identity of a catalog `NodeType` — see [node-libraries.md](./node-libraries.md) |
 | `PortId` | Key for an input or output port on a node |
-| `TypeId` | Identity of an Imp concrete type |
+| `TypeId` | Identity of an Imp concrete type, or of a [type definition](./type-definitions.md) |
 | `TypeParamId` | Identity of a type parameter declared on a `NodeDefinition` |
-| `TypeConstraintId` | Identity of a named nominal type constraint in a `TypeConstraintLibrary` |
 
 ### TypeParam
 
 | Field | Type | Required |
 | --- | --- | --- |
 | `id` | `TypeParamId` | must |
-| `bounds` | `TypeConstraintId[]` | may |
+| `bounds` | `Type[]` | may |
 
 Declares an **opaque** type parameter (e.g. `T`) on a polymorphic catalog entry. Params are scoped to the declaring `NodeDefinition`.
 
-Optional `bounds` reference named constraints from a `TypeConstraintLibrary` — see [type-constraints.md](./type-constraints.md). Omitted = unconstrained.
+Optional `bounds` are **types**. A concrete type argument satisfies the param when it is **assignable** to every bound (intersection), so a bound is usually a named union such as `{ "id": "Audio" }` defined by a [type definition](./type-definitions.md). Omitted = unconstrained. See [type-system.md](../imp-typecheck/type-system.md).
 
 ### Type
 
 An Imp **type**. Types are not specific to signals: ports use them to describe the signals they carry, but the type system stands on its own and may be used by other parts of Imp.
 
-Implementations must expose `Type` (and the other generically named type-system symbols such as `TypeId`, `ConcreteType`, `TypeVar`) **only inside an Imp-specific namespace** (package, module, or crate) — never as a global or ambient symbol — so consumers can tell them apart from third-party `Type` symbols.
+Implementations must expose `Type` (and the other generically named type-system symbols such as `TypeId`, `ConcreteType`, `TypeVar`, `UnionType`, `TypeDefinition`) **only inside an Imp-specific namespace** (package, module, or crate) — never as a global or ambient symbol — so consumers can tell them apart from third-party `Type` symbols.
 
-`Type` is a **tagged union** of two variants, JSON-discriminated by field presence:
+`Type` is a **tagged union** of three variants, JSON-discriminated by field presence:
 
 | Variant | Fields | Example |
 | --- | --- | --- |
 | **Concrete** | `id` (`TypeId`), optional `args` (`Type[]`) | `{ "id": "collection", "args": [{ "param": "T" }] }` |
 | **Variable** | `param` (`TypeParamId`) | `{ "param": "T" }` |
+| **Union** | `union` (`Type[]`) | `{ "union": [{ "id": "audio_mono" }, { "id": "audio_stereo" }] }` |
 
 Rules:
 
+- **`union`** must list at least one member. A value of a union type is a value of **one** of its members; Imp carries no runtime tag saying which. Union rules for checking (assignability, inference, normalization) are in [type-system.md](../imp-typecheck/type-system.md).
+- A concrete `id` may name a [type definition](./type-definitions.md) (a transparent alias such as `Audio` = `audio_mono | audio_stereo`); checking expands it. An `id` with no definition is an **opaque nominal type**, as before.
 - **`args`** is only valid on the concrete variant (e.g. `collection<T>`, `list<T>`, `set<T>`).
 - A concrete type with **no** `args` is a nullary type (e.g. `{ "id": "boolean" }`).
 - Bare `{ "id": "collection" }`, `{ "id": "list" }`, or `{ "id": "set" }` without `args` is **not** a well-formed container type after library migration — use `collection<any>` / `list<any>` / `set<any>` or a type parameter.
 - **`any`** is a concrete top type; static checking treats it as compatible with any other type.
 - Some concrete ids participate in a **fixed subtype relation** (e.g. `list` <: `collection`, `set` <: `collection`) enforced by `imp-typecheck` — see [type-system.md](../imp-typecheck/type-system.md).
-- Structural/record types and type aliases are out of scope for this revision — see [type-system.md](../imp-typecheck/type-system.md). Nominal type constraints on `TypeParam.bounds` are specified in [type-constraints.md](./type-constraints.md).
+- Structural/record types and recursive types are out of scope for this revision — see [type-system.md](../imp-typecheck/type-system.md).
 
 ### PrimitiveValue
 
@@ -189,7 +193,7 @@ Graphs act as **subgraphs** with an external interface. Core Imp ships definitio
 
 **One node instance per boundary port** (not a multi-port patch board). A subgraph with three inputs and one output is three `input` nodes + one `output` node. Editors may group boundary nodes visually without changing the transmission model.
 
-A host wires external values into `input` nodes and reads results from `output` nodes. Hosts that expose settings UI discover `parameter` nodes, present `label` + current `value`, and bind overrides into each parameter node's `inputs.value` before translation. Reusable subgraphs are **`NodeDefinition` entries with `body` + `bindings`** — see [node-libraries.md](./node-libraries.md) and [graph-libraries.md](./graph-libraries.md). Parent graphs reference them by `Node.type`; resolution is late — see [resolve.md](../imp-graph-resolve/resolve.md).
+A host wires external values into `input` nodes and reads results from `output` nodes. Hosts that expose settings UI discover `parameter` nodes, present `label` + current `value`, and bind overrides into each parameter node's `inputs.value` before translation. Reusable subgraphs are **`NodeDefinition` entries with `body` + `bindings`** — see [node-libraries.md](./node-libraries.md) and [imp-files.md](../imp-file/imp-files.md). Parent graphs reference them by `Node.type`; resolution is late — see [resolve.md](../imp-graph-resolve/resolve.md).
 
 ### Invariants (well-formed graphs)
 
@@ -231,9 +235,9 @@ None.
 
 - [graph-sources.md](./graph-sources.md) — edge / node providers that algorithms read graphs through
 - [node-libraries.md](./node-libraries.md) — `NodeDefinition` / `NodeLibrary` catalogs
-- [graph-libraries.md](./graph-libraries.md) — JSON graph library format
+- [imp-files.md](../imp-file/imp-files.md) — Imp files, the JSON form of types, definitions, nodes and edges
 - [resolve.md](../imp-graph-resolve/resolve.md) — late nested graph resolution
-- [type-constraints.md](./type-constraints.md) — `TypeConstraint` / `TypeConstraintLibrary` catalogs
+- [type-definitions.md](./type-definitions.md) — `TypeDefinition` (named types, including unions)
 - [type-system.md](../imp-typecheck/type-system.md) — static type checking
 - [registry.md](../imp-registry/registry.md) — loading libraries and looking up types
 - Root [AGENTS.md](../../../AGENTS.md)

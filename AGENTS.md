@@ -8,16 +8,16 @@ Imp succeeds [imp-kotlin](https://github.com/silentorb/imp-kotlin) but keeps onl
 
 ## Scope boundary
 
-imp-spec covers the **graph IR**, **NodeLibrary** operator catalogs, **`NodeImplementation` dispatch rules**, registry, typecheck, and graph-resolve. **Imp Translator** specs (format translation — e.g. Imp → SQL, Imp ↔ React Flow) and **runtime** specs (in-place execution) document themselves in [imp-ts `docs/features/`](https://github.com/silentorb/imp-ts/tree/main/docs/features/).
+imp-spec covers the **graph IR**, **Imp files**, **type definitions**, **NodeLibrary** operator catalogs, **`NodeImplementation` dispatch rules**, registry, typecheck, and graph-resolve. **Imp Translator** specs (format translation — e.g. Imp → SQL, Imp ↔ React Flow) and **runtime** specs (in-place execution) document themselves in [imp-ts `docs/features/`](https://github.com/silentorb/imp-ts/tree/main/docs/features/).
 
 Use **Imp Translator** for packages that translate Imp graphs to other formats (not Adapter, not Resolver, not lowerer).
 
 | Package | Role | Spec |
 | --- | --- | --- |
-| `imp-core-types` | Core graph + library interfaces; core boundary `NodeLibrary` | [graph-model](./docs/packages/imp-core-types/graph-model.md), [graph-sources](./docs/packages/imp-core-types/graph-sources.md), [node-libraries](./docs/packages/imp-core-types/node-libraries.md), [graph-libraries](./docs/packages/imp-core-types/graph-libraries.md), [type-constraints](./docs/packages/imp-core-types/type-constraints.md) |
-| `imp-registry` | Load `NodeLibrary` / `GraphLibrary` / `TypeConstraintLibrary` values and look up definitions | [registry](./docs/packages/imp-registry/registry.md) |
+| `imp-core-types` | Core graph + library interfaces; core boundary `NodeLibrary` | [graph-model](./docs/packages/imp-core-types/graph-model.md), [graph-sources](./docs/packages/imp-core-types/graph-sources.md), [node-libraries](./docs/packages/imp-core-types/node-libraries.md), [type-definitions](./docs/packages/imp-core-types/type-definitions.md) |
+| `imp-registry` | Load `NodeLibrary` values and Imp files; look up node and type definitions | [registry](./docs/packages/imp-registry/registry.md) |
 | `imp-typecheck` | Static type checking for graphs | [type-system](./docs/packages/imp-typecheck/type-system.md) |
-| `imp-graph-library` | Parse and validate graph library JSON | [graph-libraries](./docs/packages/imp-core-types/graph-libraries.md) |
+| `imp-file` | Parse, validate and serialize Imp files (types, definitions, nodes, edges) | [imp-files](./docs/packages/imp-file/imp-files.md) |
 | `imp-graph-resolve` | Late nested graph resolution (flatten / execution program) | [resolve](./docs/packages/imp-graph-resolve/resolve.md) |
 | `imp-collection-transforms` | Collection combinator `NodeLibrary` | [collection-transforms](./docs/packages/imp-collection-transforms/collection-transforms.md) |
 | `imp-pathing` | GQL-like path operator `NodeLibrary`; semantic path bind/desugar | [pathing](./docs/packages/imp-pathing/pathing.md), [semantic-paths](./docs/packages/imp-pathing/semantic-paths.md) |
@@ -44,9 +44,9 @@ When docs and code disagree, update the doc or the code explicitly — do not le
 | Core graph model (`Graph`, `Node`, `Edge`, ports, `InputValues`) | [graph-model.md](./docs/packages/imp-core-types/graph-model.md) |
 | Reading graphs through edge / node providers (`GraphSource`, local vs remote nodes) | [graph-sources.md](./docs/packages/imp-core-types/graph-sources.md) |
 | Node definition libraries (`NodeDefinition`, `NodeLibrary`) | [node-libraries.md](./docs/packages/imp-core-types/node-libraries.md) |
-| JSON graph libraries | [graph-libraries.md](./docs/packages/imp-core-types/graph-libraries.md) |
+| Imp files (JSON: types, definitions, nodes, edges) | [imp-files.md](./docs/packages/imp-file/imp-files.md) |
 | Late nested graph resolution | [resolve.md](./docs/packages/imp-graph-resolve/resolve.md) |
-| Type constraint libraries (`TypeConstraint`, `TypeConstraintLibrary`) | [type-constraints.md](./docs/packages/imp-core-types/type-constraints.md) |
+| Type definitions and union types (`TypeDefinition`, named unions, bounds) | [type-definitions.md](./docs/packages/imp-core-types/type-definitions.md) |
 | Static type checking | [type-system.md](./docs/packages/imp-typecheck/type-system.md) |
 | Registry load / lookup | [registry.md](./docs/packages/imp-registry/registry.md) |
 | Collection transform combinators | [collection-transforms.md](./docs/packages/imp-collection-transforms/collection-transforms.md) |
